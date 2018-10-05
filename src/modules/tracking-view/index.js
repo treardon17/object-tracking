@@ -1,5 +1,6 @@
 import React from 'react'
 import jsfeat from 'jsfeat'
+import PropTypes from 'prop-types'
 import CameraView from 'modules/camera-view'
 import Base from 'modules/module-base'
 import Tracking from '@/scripts/tracking'
@@ -9,17 +10,19 @@ import './style.scss'
 class TrackingView extends Base {
   constructor() {
     super()
-    this.mounted = false
-  }
-  componentDidMount() {
-    super.componentDidMount()
+    this._mounted = false
     this.setDefaults()
-    this.setBinds()
-    this.mounted = true
   }
 
   setDefaults() {
-    this.tracking = new Tracking()
+    this._iterationCount = 0
+    this._descriptors = null
+  }
+
+  componentDidMount() {
+    super.componentDidMount()
+    this.setBinds()
+    this._mounted = true
   }
 
   setBinds() {}
@@ -42,13 +45,6 @@ class TrackingView extends Base {
     // return count
   }
 
-  getBlurredImage(imageData) {
-    const { canvas } = this.refs
-    const blurredImg = new jsfeat.matrix_t(canvas.width, canvas.height, jsfeat.U8_t | jsfeat.C1_t)
-    jsfeat.imgproc.gaussian_blur(imageData.data, blurredImg, 3)
-    return blurredImg
-  }
-
   drawPoint({ ctx, canvas, x, y, radius = 5, fill = 'red' }) {
     if (!ctx && canvas) ctx = canvas.getContext('2d') // eslint-disable-line
     ctx.fillStyle = fill
@@ -68,20 +64,29 @@ class TrackingView extends Base {
 
   // events
   onCameraUpdate = ({ pixels, canvas, ctx }) => {
-    // ctx.rect(0, 0, 100, 100)
-    // ctx.fill()
-    // ctx.fillStyle = 'red'
-    // ctx.beginPath()
-    // ctx.arc(0, 0, 5, 0, 2 * Math.PI)
-    // ctx.fill()
-
-    const descriptors = this.tracking.ORBDescriptors(pixels)
-    const { keypoints } = descriptors
+    if (!this.tracking) this.tracking = new Tracking({ width: canvas.width, height: canvas.height })
+    this._iterationCount += 1
+    if (this._iterationCount % 2000 || !this._descriptors) {
+      const data = { imageData: pixels }
+      if (!this.trainingImg) {
+        this.trainingImg = pixels
+        data.trainingImg = this.trainingImg
+      }
+      this.tracking.tick(data)
+      // this._descriptors = this.tracking.ORBDescriptors({ imageData: pixels })
+      // if (!this.training) this.training = this.tracking.trainPattern({ imageData: pixels })
+      // // if (!this.screenCorners) this.screenCorners = this.tracking.createScreenCorners({ width: pixels.width, height: pixels.height })
+      // const matches = this.tracking.matchPattern({ screenDescriptors: this._descriptors.screenDescriptors, patternDescriptors: this.training.patternDescriptors })
+      // const transform = this.tracking.findTransform({
+      //   matches: matches.items,
+      //   count: matches.length,
+      //   screenCorners: this.screenCorners,
+      //   patternCorners: this.training.patternCorners
+      // })
+      // console.log(transform)
+    }
+    const { keypoints } = this.tracking.descriptors
     this.drawORBDescriptors({ ctx, radius: 2, keypoints })
-
-    // ctx.stroke()
-    // console.log(orb)
-    // console.log(this.getCorners(pixels))
   }
 
   render() {
@@ -91,6 +96,10 @@ class TrackingView extends Base {
       </div>
     )
   }
+}
+
+TrackingView.propTypes = {
+  throttle: PropTypes.number
 }
 
 export default TrackingView
