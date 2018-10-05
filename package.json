@@ -50,6 +50,7 @@
     "ignore-styles": "^5.0.1",
     "jsdom": "^11.6.2",
     "jsfeat": "0.0.8",
+    "lodash": "^4.17.11",
     "mobx": "^4.1.0",
     "mobx-react": "^5.0.0",
     "prop-types": "^15.6.1",

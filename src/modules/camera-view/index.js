@@ -84,20 +84,12 @@ class CameraView extends Base {
 
   update() {
     window.requestAnimationFrame(this.update.bind(this))
-    if (typeof this.props.onUpdate === 'function') {
-      const { canvas } = this.refs
-      this.props.onUpdate(this.getPixels({
-        x: 0,
-        y: 0,
-        width: canvas.width,
-        height: canvas.height
-      }))
-    }
     if (this.streaming) {
       this.renderCameraFeed()
-      if (typeof this.onDraw === 'function') {
+      if (typeof this.props.onUpdate === 'function') {
         const { canvas } = this.refs
-        this.onDraw(canvas, canvas.getContext('2d'))
+        const pixels = this.getPixels({ x: 0, y: 0, width: canvas.width, height: canvas.height })
+        this.props.onUpdate({ pixels, canvas, ctx: canvas.getContext('2d') })
       }
     }
   }

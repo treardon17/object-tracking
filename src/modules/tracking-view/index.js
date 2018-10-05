@@ -2,6 +2,7 @@ import React from 'react'
 import jsfeat from 'jsfeat'
 import CameraView from 'modules/camera-view'
 import Base from 'modules/module-base'
+import Tracking from '@/scripts/tracking'
 import './style.scss'
 
 
@@ -17,7 +18,10 @@ class TrackingView extends Base {
     this.mounted = true
   }
 
-  setDefaults() {}
+  setDefaults() {
+    this.tracking = new Tracking()
+  }
+
   setBinds() {}
 
   // actions
@@ -45,14 +49,46 @@ class TrackingView extends Base {
     return blurredImg
   }
 
+  drawPoint({ ctx, canvas, x, y, radius = 5, fill = 'red' }) {
+    if (!ctx && canvas) ctx = canvas.getContext('2d') // eslint-disable-line
+    ctx.fillStyle = fill
+    ctx.beginPath()
+    ctx.arc(x, y, radius, 0, 2 * Math.PI)
+    ctx.fill()
+  }
+
+  drawORBDescriptors({ canvas, ctx, radius = 2, fill = 'red', keypoints = [] }) {
+    if (!ctx && canvas) ctx = canvas.getContext('2d') // eslint-disable-line
+    for (let i = 0; i < keypoints.length; i += 1) {
+      const descriptor = keypoints[i]
+      const { x, y } = descriptor
+      this.drawPoint({ x, y, ctx, radius, fill })
+    }
+  }
+
   // events
-  onCameraUpdate = (pixels) => {
+  onCameraUpdate = ({ pixels, canvas, ctx }) => {
+    // ctx.rect(0, 0, 100, 100)
+    // ctx.fill()
+    // ctx.fillStyle = 'red'
+    // ctx.beginPath()
+    // ctx.arc(0, 0, 5, 0, 2 * Math.PI)
+    // ctx.fill()
+
+    const descriptors = this.tracking.ORBDescriptors(pixels)
+    const { keypoints } = descriptors
+    this.drawORBDescriptors({ ctx, radius: 2, keypoints })
+
+    // ctx.stroke()
+    // console.log(orb)
     // console.log(this.getCorners(pixels))
   }
 
   render() {
     return (
-      <CameraView onUpdate={this.onCameraUpdate} ref={ref => this.cameraView = ref} />
+      <div className="tracking-view">
+        <CameraView scale={0.3} onUpdate={this.onCameraUpdate} ref={ref => this.cameraView = ref} />
+      </div>
     )
   }
 }
