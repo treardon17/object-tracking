@@ -45,7 +45,7 @@ class TrackingView extends Base {
     // return count
   }
 
-  drawPoint({ ctx, canvas, x, y, radius = 5, fill = 'red' }) {
+  drawPoint({ ctx, canvas, x, y, radius = 2, fill = 'red' }) {
     if (!ctx && canvas) ctx = canvas.getContext('2d') // eslint-disable-line
     ctx.fillStyle = fill
     ctx.beginPath()
@@ -62,29 +62,43 @@ class TrackingView extends Base {
     }
   }
 
+  drawRectContainer({ ctx, canvas, strokeWidth = 5, strokeColor = 'red', corners = [] }) {
+    if (!ctx && canvas) ctx = canvas.getContext('2d') // eslint-disable-line
+    if (corners.length > 0) {
+      ctx.beginPath()
+      ctx.strokeWidth = strokeWidth
+      ctx.strokeStyle = strokeColor
+      for (let i = 0; i < corners.length; i += 1) {
+        const corner = corners[i]
+        const { x, y } = corner
+        ctx.lineTo(x, y)
+      }
+      ctx.lineTo(corners[0].x, corners[0].y)
+      ctx.stroke()
+    }
+  }
+
   // events
   onCameraUpdate = ({ pixels, canvas, ctx }) => {
-    if (!this.tracking) this.tracking = new Tracking({ width: canvas.width, height: canvas.height })
+    if (!this.tracking) {
+      this.tracking = new Tracking({ width: canvas.width, height: canvas.height })
+      this.tracking.setTraining({ trainingImg: this.props.markerImg })
+      // this.tracking.setTraining({ trainingImg: pixels })
+    }
+
     this._iterationCount += 1
-    if (this._iterationCount % 2000 || !this._descriptors) {
+    if (this._iterationCount % 1500 || !this._descriptors) {
       const data = { imageData: pixels }
       if (!this.trainingImg) {
         this.trainingImg = pixels
         data.trainingImg = this.trainingImg
       }
       this.tracking.tick(data)
-      // this._descriptors = this.tracking.ORBDescriptors({ imageData: pixels })
-      // if (!this.training) this.training = this.tracking.trainPattern({ imageData: pixels })
-      // // if (!this.screenCorners) this.screenCorners = this.tracking.createScreenCorners({ width: pixels.width, height: pixels.height })
-      // const matches = this.tracking.matchPattern({ screenDescriptors: this._descriptors.screenDescriptors, patternDescriptors: this.training.patternDescriptors })
-      // const transform = this.tracking.findTransform({
-      //   matches: matches.items,
-      //   count: matches.length,
-      //   screenCorners: this.screenCorners,
-      //   patternCorners: this.training.patternCorners
-      // })
-      // console.log(transform)
     }
+    if (this.tracking.rectCorners) {
+      this.drawRectContainer({ ctx, corners: this.tracking.rectCorners })
+    }
+    console.log('good matches:', this.tracking.rectCorners)
     const { keypoints } = this.tracking.descriptors
     this.drawORBDescriptors({ ctx, radius: 2, keypoints })
   }
@@ -99,7 +113,8 @@ class TrackingView extends Base {
 }
 
 TrackingView.propTypes = {
-  throttle: PropTypes.number
+  throttle: PropTypes.number,
+  markerImg: PropTypes.string
 }
 
 export default TrackingView

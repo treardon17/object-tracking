@@ -1,5 +1,6 @@
 import React from 'react'
 import TrackingView from 'modules/tracking-view'
+import Marker from '../assets/img/marker.png'
 
 class Home extends React.Component {
   componentDidMount() {
@@ -9,7 +10,7 @@ class Home extends React.Component {
   render() {
     return (
       <div className="page home">
-        <TrackingView ref={ref => this.cameraView = ref} />
+        <TrackingView markerImg={Marker} ref={ref => this.cameraView = ref} />
       </div>
     )
   }

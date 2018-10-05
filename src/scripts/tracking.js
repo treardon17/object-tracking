@@ -9,15 +9,15 @@ export default class Tracking {
   }
 
   setDefaults() {
-    // this.pattern = {
-    //   corners: null,
-    //   descriptors: null
-    // }
-
+    this.numTrainLevels = 4
     this.homo3x3 = new jsfeat.matrix_t(3, 3, jsfeat.F32C1_t)
     this.matchMask = new jsfeat.matrix_t(500, 1, jsfeat.U8C1_t)
     this.screenCorners = this.createScreenCorners({ width: this.width, height: this.height })
     this.numCorners = 0
+    this.imgU8 = null
+    this.imgU8Smooth = null
+    this.numGoodMatches = 0
+    this.rectCorners = []
   }
 
   // getters
@@ -41,20 +41,47 @@ export default class Tracking {
     return this._descriptors
   }
 
-  tick({ imageData, trainingImg }) {
+  setTraining({ trainingImg }) {
+    let imageData
+    if (typeof trainingImg === 'string') {
+      const image = new Image()
+      image.onload = (img) => {
+        image.width = 100
+        image.height = 100
+        const canvas = document.createElement('canvas')
+        canvas.id = 'training-canvas'
+        document.body.appendChild(canvas)
+        const ctx = canvas.getContext('2d')
+        canvas.width = this.width
+        canvas.height = this.height
+        const imgX = (canvas.width / 2) - (image.width / 2)
+        const imgY = (canvas.height / 2) - (image.height / 2)
+        const imgDim = canvas.height / 2
+        ctx.drawImage(image, imgX, imgY, imgDim, imgDim)
+        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        this.training = this.trainPattern({ imageData })
+      }
+      image.src = trainingImg
+    } else {
+      imageData = trainingImg
+      this.training = this.trainPattern({ imageData })
+    }
+  }
+
+  tick({ imageData }) {
     this._descriptors = this.ORBDescriptors({ imageData })
-    if (trainingImg != null) this.training = this.trainPattern({ imageData: trainingImg })
-    // jsfeat.orb.describe(img_u8_smooth, screen_corners, num_corners, screen_descriptors)
-    // if (!this.screenCorners) this.screenCorners = this.tracking.createScreenCorners({ width: pixels.width, height: pixels.height })
+    this.numCorners = this.detectKeypoints(this.descriptors.imgU8Smooth, this.screenCorners, 500)
+    jsfeat.orb.describe(this.descriptors.imgU8Smooth, this.screenCorners, this.numCorners, this.descriptors.screenDescriptors)
+
     if (this.training) {
-      const matches = this.matchPattern({ screenDescriptors: this._descriptors.screenDescriptors, patternDescriptors: this.training.patternDescriptors })
-      const transform = this.findTransform({
+      const matches = this.matchPattern({ screenDescriptors: this.descriptors.screenDescriptors, patternDescriptors: this.training.patternDescriptors })
+      this.numGoodMatches = this.findTransform({
         matches: matches.items,
         count: matches.length,
         screenCorners: this.screenCorners,
         patternCorners: this.training.patternCorners
       })
-      console.log(transform)
+      this.rectCorners = this.tCorners(this.homo3x3.data, this.width, this.height)
     }
   }
 
@@ -159,8 +186,31 @@ export default class Tracking {
 
     return {
       keypoints: points,
-      screenDescriptors
+      screenDescriptors,
+      imgU8,
+      imgU8Smooth
     }
+  }
+
+  // project/transform rectangle corners with 3x3 Matrix
+  tCorners(M, w, h) {
+    const pt = [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }]
+    let z = 0.0
+    let i = 0
+    let px = 0.0
+    let py = 0.0
+
+    /* eslint-disable */
+    for (; i < 4; ++i) {
+      px = M[0] * pt[i].x + M[1] * pt[i].y + M[2]
+      py = M[3] * pt[i].x + M[4] * pt[i].y + M[5]
+      z = M[6] * pt[i].x + M[7] * pt[i].y + M[8]
+      pt[i].x = px / z
+      pt[i].y = py / z
+    }
+    /* eslint-enable */
+
+    return pt
   }
 
   // non zero bits count
@@ -172,7 +222,7 @@ export default class Tracking {
     /* eslint-enable */
   }
 
-  trainPattern({ imageData, numTrainLevels = 3 }) {
+  trainPattern({ imageData, numTrainLevels = this.numTrainLevels }) {
     const imgU8 = this.createGrayscaleU8Image({ imageData })
     const { rows, cols } = imgU8
     // const cols = imageData.width
@@ -184,7 +234,7 @@ export default class Tracking {
     let i = 0
     let sc = 1.0
     const maxPatternSize = 300 // 512
-    const maxPerLevel = 200 // 300
+    const maxPerLevel = 300 // 300
     const scInc = Math.sqrt(2.0) // magic number ;)
     const lev0Img = new jsfeat.matrix_t(cols, rows, jsfeat.U8_t | jsfeat.C1_t)
     const levImg = new jsfeat.matrix_t(cols, rows, jsfeat.U8_t | jsfeat.C1_t)
@@ -260,7 +310,7 @@ export default class Tracking {
   // naive brute-force matching.
   // each on screen point is compared to all pattern points
   // to find the closest match
-  matchPattern({ screenDescriptors, patternDescriptors, matchThreshold = 48, numTrainLevels = 3 }) {
+  matchPattern({ screenDescriptors, patternDescriptors, matchThreshold = 48, numTrainLevels = this.numTrainLevels }) {
     const matches = []
     const qCnt = screenDescriptors.rows
     const queryDu8 = screenDescriptors.data
@@ -305,21 +355,21 @@ export default class Tracking {
       }
 
       // filter out by some threshold
-      if (bestDist < matchThreshold) {
-        matches[numMatches] = {}
-        matches[numMatches].screen_idx = qidx
-        matches[numMatches].pattern_lev = bestLev
-        matches[numMatches].pattern_idx = bestIdx
-        numMatches++
-      }
-
-      // if (bestDist < 0.8 * bestDist2) {
+      // if (bestDist < matchThreshold) {
       //   matches[numMatches] = {}
       //   matches[numMatches].screen_idx = qidx
       //   matches[numMatches].pattern_lev = bestLev
       //   matches[numMatches].pattern_idx = bestIdx
       //   numMatches++
       // }
+
+      if (bestDist < 0.8 * bestDist2) {
+        matches[numMatches] = {}
+        matches[numMatches].screen_idx = qidx
+        matches[numMatches].pattern_lev = bestLev
+        matches[numMatches].pattern_idx = bestIdx
+        numMatches++
+      }
 
       qdOff += 8 // next query descriptor
     }
@@ -332,7 +382,6 @@ export default class Tracking {
 
   // estimate homography transform between matched points
   findTransform({ matches, count, screenCorners, patternCorners }) {
-    debugger // eslint-disable-line
     // motion kernel
     const mmKernel = new jsfeat.motion_model.homography2d()
     // ransac params
