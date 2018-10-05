@@ -1,5 +1,6 @@
 import React from 'react'
-import Base from '../module-base'
+import PropTypes from 'prop-types'
+import Base from 'modules/module-base'
 import './style.scss'
 
 
@@ -69,7 +70,6 @@ class CameraView extends Base {
           canvas.height = this.video.videoHeight * this._scale
           this.video.width = this.video.videoWidth
           this.video.height = this.video.videoHeight
-          console.log('canvas dimensions', canvas.width, canvas.height, this._scale)
           resolve()
         })
         this.stream = stream
@@ -84,6 +84,15 @@ class CameraView extends Base {
 
   update() {
     window.requestAnimationFrame(this.update.bind(this))
+    if (typeof this.props.onUpdate === 'function') {
+      const { canvas } = this.refs
+      this.props.onUpdate(this.getPixels({
+        x: 0,
+        y: 0,
+        width: canvas.width,
+        height: canvas.height
+      }))
+    }
     if (this.streaming) {
       this.renderCameraFeed()
       if (typeof this.onDraw === 'function') {
@@ -131,28 +140,31 @@ class CameraView extends Base {
     return imgData
   }
 
+  getPixels({ x, y, width, height, contrast, grayscale } = {}) {
+    const { canvas } = this.refs
+    if (x != null && y != null && width && height) {
+      const ctx = canvas.getContext('2d')
+      ctx.imageSmoothingEnabled = false
+      let imagedata = ctx.getImageData(x, y, width, height)
+      if (grayscale != null) { imagedata = this.grayScale(imagedata) }
+      if (contrast != null) { imagedata = this.contrastImage(imagedata, contrast) }
+      return imagedata
+    }
+    return null
+  }
+
   snapshot({ x, y, width, height, contrast, grayscale, flash } = {}) {
     if (flash) {
       if (this.flashTimeout) clearTimeout(this.flashTimeout)
       this.showFlash = true
       this.flashTimeout = setTimeout(() => { this.showFlash = false }, 200)
     }
-    const { canvas } = this.refs
     if (x != null && y != null && width && height) {
-      const ctx = canvas.getContext('2d')
-      ctx.imageSmoothingEnabled = false
-      let imagedata = ctx.getImageData(x, y, width, height)
-      const tempCanvas = document.createElement('canvas')
-      const tempCtx = tempCanvas.getContext('2d')
-      tempCtx.imageSmoothingEnabled = false
-      tempCanvas.width = imagedata.width
-      tempCanvas.height = imagedata.height
-
-      if (grayscale != null) { imagedata = this.grayScale(imagedata) }
-      if (contrast != null) { imagedata = this.contrastImage(imagedata, contrast) }
+      const imagedata = this.getPixels({ x, y, width, height, contrast, grayscale })
       tempCtx.putImageData(imagedata, 0, 0)
       return tempCanvas.toDataURL('jpg')
     }
+    const { canvas } = this.refs
     // base64 image
     const image = canvas.toDataURL('jpg')
     return image
@@ -171,6 +183,10 @@ class CameraView extends Base {
       </div>
     )
   }
+}
+
+CameraView.propTypes = {
+  onUpdate: PropTypes.func
 }
 
 export default CameraView

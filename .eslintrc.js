@@ -31,7 +31,10 @@ module.exports = {
     "jsx-a11y/media-has-caption": 0,
     "no-nested-ternary": 0,
     "no-return-assign": 0,
-    "no-underscore-dangle": 0
+    "no-underscore-dangle": 0,
+    "new-cap": 0,
+    "no-plusplus": 0,
+    "no-bitwise": 0
   },
   "env": {
     "browser": true,

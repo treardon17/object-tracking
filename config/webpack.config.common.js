@@ -29,6 +29,7 @@ const config = {
     // alias styles, modules, and state
     alias: {
       '@': path.resolve('src/'),
+      scripts: path.resolve('src/scripts/'),
       styles: path.resolve('src/styles/'),
       modules: path.resolve('src/modules/'),
       state: path.resolve('src/state'),

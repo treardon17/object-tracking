@@ -1,6 +1,6 @@
 import React from 'react'
-import Base from '../module-base'
-import './template.scss'
+import Base from 'modules/module-base'
+import './style.scss'
 
 
 class Template extends Base {

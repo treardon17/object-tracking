@@ -1,5 +1,5 @@
 import React from 'react'
-import CameraView from 'modules/camera-view'
+import TrackingView from 'modules/tracking-view'
 
 class Home extends React.Component {
   componentDidMount() {
@@ -9,7 +9,7 @@ class Home extends React.Component {
   render() {
     return (
       <div className="page home">
-        <CameraView ref={ref => this.cameraView = ref} />
+        <TrackingView ref={ref => this.cameraView = ref} />
       </div>
     )
   }
