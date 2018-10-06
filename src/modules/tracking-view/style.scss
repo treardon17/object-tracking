@@ -3,4 +3,10 @@
 
 .tracking-view {
   width: 100vw;
+
+  &.hide-camera{
+    .camera-view{
+      display: none;
+    }
+  }
 }

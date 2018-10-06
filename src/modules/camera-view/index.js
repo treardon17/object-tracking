@@ -178,7 +178,8 @@ class CameraView extends Base {
 }
 
 CameraView.propTypes = {
-  onUpdate: PropTypes.func
+  onUpdate: PropTypes.func,
+  drawVideo: PropTypes.bool
 }
 
 export default CameraView

@@ -50,13 +50,15 @@ export default class Tracking {
         image.height = 100
         const canvas = document.createElement('canvas')
         canvas.id = 'training-canvas'
-        document.body.appendChild(canvas)
         const ctx = canvas.getContext('2d')
         canvas.width = this.width
         canvas.height = this.height
         const imgX = (canvas.width / 2) - (image.width / 2)
         const imgY = (canvas.height / 2) - (image.height / 2)
         const imgDim = canvas.height / 2
+        ctx.rect(0, 0, canvas.width, canvas.height)
+        ctx.fillStyle = 'white'
+        ctx.fill()
         ctx.drawImage(image, imgX, imgY, imgDim, imgDim)
         imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         this.training = this.trainPattern({ imageData })
@@ -81,7 +83,9 @@ export default class Tracking {
         screenCorners: this.screenCorners,
         patternCorners: this.training.patternCorners
       })
-      this.rectCorners = this.tCorners(this.homo3x3.data, this.width, this.height)
+      console.log(this.numGoodMatches)
+      this.rectCorners = this.tCorners(this.homo3x3.data, this.width * 2, this.height * 2)
+      // console.log(this.rectCorners)
     }
   }
 
@@ -164,19 +168,19 @@ export default class Tracking {
   // imageData is the result of canvas ctx.getImageData(x, y, width, height)
   ORBDescriptors({ imageData, maxKeypoints = 500 } = {}) {
     const { data, width, height } = imageData
-    const imgU8 = new jsfeat.matrix_t(width, height, jsfeat.U8_t | jsfeat.C1_t)
-    const imgU8Smooth = new jsfeat.matrix_t(width, height, jsfeat.U8_t | jsfeat.C1_t)
+    this.imgU8 = new jsfeat.matrix_t(width, height, jsfeat.U8_t | jsfeat.C1_t)
+    this.imgU8Smooth = new jsfeat.matrix_t(width, height, jsfeat.U8_t | jsfeat.C1_t)
     const screenDescriptors = new jsfeat.matrix_t(32, 500, jsfeat.U8_t | jsfeat.C1_t)
     // const patternDescriptors = []
     const keypoints = []
 
-    jsfeat.imgproc.grayscale(data, width, height, imgU8)
-    jsfeat.imgproc.gaussian_blur(imgU8, imgU8Smooth, this.options.blurSize)
+    jsfeat.imgproc.grayscale(data, width, height, this.imgU8)
+    jsfeat.imgproc.gaussian_blur(this.imgU8, this.imgU8Smooth, this.options.blurSize)
 
     for (let i = width * height; i >= 0; --i) keypoints[i] = new jsfeat.keypoint_t(0, 0, 0, 0, -1)
 
-    const numKeypoints = this.detectKeypoints(imgU8Smooth, keypoints, maxKeypoints)
-    jsfeat.orb.describe(imgU8Smooth, keypoints, numKeypoints, screenDescriptors)
+    const numKeypoints = this.detectKeypoints(this.imgU8Smooth, keypoints, maxKeypoints)
+    jsfeat.orb.describe(this.imgU8Smooth, keypoints, numKeypoints, screenDescriptors)
 
     const points = []
     for (let i = 0; i < numKeypoints; i++) {
@@ -187,8 +191,8 @@ export default class Tracking {
     return {
       keypoints: points,
       screenDescriptors,
-      imgU8,
-      imgU8Smooth
+      imgU8: this.imgU8,
+      imgU8Smooth: this.imgU8Smooth
     }
   }
 
@@ -233,8 +237,8 @@ export default class Tracking {
     let lev = 0
     let i = 0
     let sc = 1.0
-    const maxPatternSize = 300 // 512
-    const maxPerLevel = 300 // 300
+    const maxPatternSize = 512
+    const maxPerLevel = 300
     const scInc = Math.sqrt(2.0) // magic number ;)
     const lev0Img = new jsfeat.matrix_t(cols, rows, jsfeat.U8_t | jsfeat.C1_t)
     const levImg = new jsfeat.matrix_t(cols, rows, jsfeat.U8_t | jsfeat.C1_t)
@@ -310,7 +314,7 @@ export default class Tracking {
   // naive brute-force matching.
   // each on screen point is compared to all pattern points
   // to find the closest match
-  matchPattern({ screenDescriptors, patternDescriptors, matchThreshold = 48, numTrainLevels = this.numTrainLevels }) {
+  matchPattern({ screenDescriptors, patternDescriptors, matchThreshold = 25, numTrainLevels = this.numTrainLevels }) {
     const matches = []
     const qCnt = screenDescriptors.rows
     const queryDu8 = screenDescriptors.data
@@ -355,21 +359,21 @@ export default class Tracking {
       }
 
       // filter out by some threshold
-      // if (bestDist < matchThreshold) {
-      //   matches[numMatches] = {}
-      //   matches[numMatches].screen_idx = qidx
-      //   matches[numMatches].pattern_lev = bestLev
-      //   matches[numMatches].pattern_idx = bestIdx
-      //   numMatches++
-      // }
-
-      if (bestDist < 0.8 * bestDist2) {
+      if (bestDist < matchThreshold) {
         matches[numMatches] = {}
         matches[numMatches].screen_idx = qidx
         matches[numMatches].pattern_lev = bestLev
         matches[numMatches].pattern_idx = bestIdx
         numMatches++
       }
+
+      // if (bestDist < 0.8 * bestDist2) {
+      //   matches[numMatches] = {}
+      //   matches[numMatches].screen_idx = qidx
+      //   matches[numMatches].pattern_lev = bestLev
+      //   matches[numMatches].pattern_idx = bestIdx
+      //   numMatches++
+      // }
 
       qdOff += 8 // next query descriptor
     }
@@ -387,10 +391,7 @@ export default class Tracking {
     // ransac params
     const numModelPoints = 4
     const reprojThreshold = 3
-    const ransacParam = new jsfeat.ransac_params_t(
-      numModelPoints,
-      reprojThreshold, 0.5, 0.99
-    )
+    const ransacParam = new jsfeat.ransac_params_t(numModelPoints, reprojThreshold, 0.5, 0.99)
 
     const patternXY = []
     const screenXY = []

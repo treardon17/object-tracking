@@ -62,18 +62,19 @@ class TrackingView extends Base {
     }
   }
 
-  drawRectContainer({ ctx, canvas, strokeWidth = 5, strokeColor = 'red', corners = [] }) {
+  drawRectContainer({ ctx, canvas, strokeWidth = 5, color = 'green', corners = [] }) {
     if (!ctx && canvas) ctx = canvas.getContext('2d') // eslint-disable-line
     if (corners.length > 0) {
       ctx.beginPath()
       ctx.strokeWidth = strokeWidth
-      ctx.strokeStyle = strokeColor
+      ctx.strokeStyle = color
       for (let i = 0; i < corners.length; i += 1) {
         const corner = corners[i]
         const { x, y } = corner
-        ctx.lineTo(x, y)
+        // ctx.lineTo(x, y)
+        this.drawPoint({ ctx, x, y, fill: color })
       }
-      ctx.lineTo(corners[0].x, corners[0].y)
+      // ctx.lineTo(corners[0].x, corners[0].y)
       ctx.stroke()
     }
   }
@@ -87,34 +88,49 @@ class TrackingView extends Base {
     }
 
     this._iterationCount += 1
-    if (this._iterationCount % 1500 || !this._descriptors) {
-      const data = { imageData: pixels }
-      if (!this.trainingImg) {
-        this.trainingImg = pixels
-        data.trainingImg = this.trainingImg
-      }
-      this.tracking.tick(data)
+    if (this._iterationCount % 500 || !this._descriptors) {
+      this.tracking.tick({ imageData: pixels })
     }
+
     if (this.tracking.rectCorners) {
       this.drawRectContainer({ ctx, corners: this.tracking.rectCorners })
     }
-    console.log('good matches:', this.tracking.rectCorners)
-    const { keypoints } = this.tracking.descriptors
-    this.drawORBDescriptors({ ctx, radius: 2, keypoints })
+
+    if (this.props.showSmooth && this.smoothCanvas) {
+      this.smoothCanvas.width = canvas.width
+      this.smoothCanvas.height = canvas.height
+      const grayCtx = this.smoothCanvas.getContext('2d')
+      const { imgU8Smooth } = this.tracking
+      const clamped = Uint8ClampedArray.from(imgU8Smooth.data)
+      grayCtx.putImageData(new ImageData(clamped, imgU8Smooth.cols / 2, imgU8Smooth.rows / 2), 0, 0, 0, 0, canvas.width, canvas.height)
+    }
+
+    if (this.props.showDots && this.dotCanvas) {
+      const { keypoints } = this.tracking.descriptors
+      this.dotCanvas.width = canvas.width
+      this.dotCanvas.height = canvas.height
+      this.drawORBDescriptors({ canvas: this.dotCanvas, radius: 2, keypoints })
+    }
   }
 
   render() {
+    let classes = 'tracking-view'
+    if (this.props.hideCamera) classes += ' hide-camera'
     return (
-      <div className="tracking-view">
-        <CameraView scale={0.3} onUpdate={this.onCameraUpdate} ref={ref => this.cameraView = ref} />
+      <div className={classes}>
+        <CameraView scale={0.5} onUpdate={this.onCameraUpdate} ref={ref => this.cameraView = ref} />
+        { this.props.showDots ? <canvas ref={ref => this.dotCanvas = ref} /> : null }
+        { this.props.showSmooth ? <canvas ref={ref => this.smoothCanvas = ref} /> : null}
       </div>
     )
   }
 }
 
 TrackingView.propTypes = {
-  throttle: PropTypes.number,
-  markerImg: PropTypes.string
+  hideCamera: PropTypes.bool,
+  showDots: PropTypes.bool,
+  showSmooth: PropTypes.bool,
+  markerImg: PropTypes.string,
 }
 
 export default TrackingView
