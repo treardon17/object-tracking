@@ -8,7 +8,7 @@ export default class Tracking {
   }
 
   setDefaults() {
-    this.markerWidth = 20 // width in millimeters
+    this.markerWidth = 10 // width in millimeters
     this.detector = new AR.Detector()
     this.poser = new POS1.Posit(this.markerWidth, this.width)
     this.markers = null
@@ -25,6 +25,11 @@ export default class Tracking {
       this.poses = []
       this.markers.forEach((marker) => {
         const { corners } = marker
+        // for (let i = 0; i < corners.length; ++i) {
+        //   const corner = corners[i]
+        //   corner.x -= (this.width / 2)
+        //   corner.y = (this.height / 2) - corner.y
+        // }
         this.poses.push(this.poser.pose(corners))
       })
     }
