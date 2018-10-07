@@ -5,8 +5,14 @@ import { observer } from 'mobx-react'
 
 @observer
 class Base extends React.Component {
+  constructor() {
+    super()
+    this._mounted = false
+  }
+
   componentDidMount() {
     this.setupRefs()
+    this._mounted = true
   }
 
   setupRefs() {

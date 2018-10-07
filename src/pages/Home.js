@@ -10,7 +10,7 @@ class Home extends React.Component {
   render() {
     return (
       <div className="page home">
-        <TrackingView showDots markerImg={Marker} ref={ref => this.cameraView = ref} />
+        <TrackingView markerImg={Marker} ref={ref => this.cameraView = ref} />
       </div>
     )
   }
