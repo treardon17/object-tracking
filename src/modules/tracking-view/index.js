@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'
 import CameraView from 'modules/camera-view'
 import Base from 'modules/module-base'
 import Tracking from '@/scripts/tracking'
-import THREE from 'three.js'
+import BABYLON from 'babylonjs'
 // import Util from '@/util'
 import './style.scss'
 
@@ -23,6 +23,8 @@ class TrackingView extends Base {
 
   setupIfNeeded({ width, height }) {
     if (!this._setup) {
+      this.width = width
+      this.height = height
       this.tracking = new Tracking({ width, height })
       this.setScene({ width, height })
       this._setup = true
@@ -33,33 +35,48 @@ class TrackingView extends Base {
   // THREEJS
   // /////////////////////////////////
   setScene({ width, height }) {
-    this.scene = new THREE.Scene()
-    this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.refs.canvasOverlay, alpha: true })
-    this.renderer.setSize(width, height)
-    this.camera.position.z = 50
+    this.refs.canvasOverlay.width = width
+    this.refs.canvasOverlay.height = height
+    this.engine = new BABYLON.Engine(this.refs.canvasOverlay, true, { preserveDrawingBuffer: true, stencil: true })
+    this.scene = new BABYLON.Scene(this.engine)
+    this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 0)
+    this.camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), this.scene)
 
-    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
-    this.scene.add(this.directionalLight)
+    this.camera.setTarget(BABYLON.Vector3.Zero())
+    this.camera.attachControl(this.refs.canvasOverlay, false)
+    this.light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0), this.scene)
 
     this.sceneItems = {}
-    this.addCube({ name: 'test' })
   }
 
-  addCube({ name }) {
-    const geometry = new THREE.BoxGeometry(10, 10, 10)
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-    const cube = new THREE.Mesh(geometry, material)
+  addCubeIfNeeded({ name }) {
+    if (!this.sceneItems[name]) {
+      const cube = new BABYLON.Mesh.CreateBox('mesh', 3, this.scene)
+      cube.showBoundingBox = true
+      const material = new BABYLON.StandardMaterial('std', this.scene)
+      material.diffuseColor = new BABYLON.Color3(0.5, 0, 0.5)
 
-    const eGeometry = new THREE.EdgesGeometry(cube.geometry)
-    const eMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 10 })
-    const edges = new THREE.LineSegments(eGeometry, eMaterial)
-    cube.add(edges)
+      cube.material = material
 
+      this.sceneItems[name] = cube
+    }
+  }
 
-    cube.name = name
-    this.sceneItems[name] = cube
-    this.scene.add(cube)
+  removeCube({ name }) {
+    const cube = this.sceneItems[name]
+    if (cube) cube.dispose()
+    delete this.sceneItems[name]
+  }
+
+  removeExtraCubes() {
+    if (this.tracking.markers) {
+      const markerKeys = Object.keys(this.tracking.markers)
+      const sceneKeys = Object.keys(this.sceneItems)
+      const keysToRemove = sceneKeys.filter(i => markerKeys.indexOf(i) < 0)
+      keysToRemove.forEach((name) => {
+        this.removeCube({ name })
+      })
+    }
   }
 
   // /////////////////////////////////
@@ -99,42 +116,55 @@ class TrackingView extends Base {
     }
   }
 
+  getWorldVector({ x = 0, y = 0, z = 0, width = 0, height = 0 }) {
+    return BABYLON.Vector3.UnprojectFromTransform(new BABYLON.Vector3(x, y, z), width, height, BABYLON.Matrix.Identity(), this.scene.getTransformMatrix())
+  }
+
+  setCubes({ ctx, rotate = true, translate = true } = {}) {
+    if (this.tracking.markers) {
+      this.removeExtraCubes()
+      this.tracking.markerList.forEach((marker) => {
+        this.drawRectContainer({ ctx, corners: marker.corners, color: 'red', strokeWidth: 5 })
+        this.addCubeIfNeeded({ name: marker.id })
+        const cube = this.sceneItems[marker.id]
+        // translation
+        if (translate) {
+          const [x, y, z] = marker.pose.bestTranslation
+          const vector = this.getWorldVector({ x, y, z, width: this.width, height: this.height })
+          console.log(vector)
+        }
+
+        // rotation
+        if (rotate) {
+          // const [x, y, z] = marker.pose.bestTranslation
+          // cube.position.x = x / base
+          // cube.position.y = -y / base
+          // cube.position.z = -z / base
+          // cube.position.x = vector.x
+          // cube.position.y = vector.y
+          // cube.position.z = vector.z
+          const { x, y, z } = marker.rotation
+          cube.rotation.x = -x // correct
+          // cube.rotation.y = y
+          // // console.log('y:', y, Math.PI / 2)
+          cube.rotation.z = -z // correct
+        }
+      })
+    }
+  }
+
+  renderScene() {
+    this.scene.render()
+  }
+
   // /////////////////////////////////
   // EVENTS
   // /////////////////////////////////
   onCameraUpdate = ({ pixels, canvas, ctx }) => {
     this.setupIfNeeded({ width: canvas.width, height: canvas.height })
     this.tracking.tick({ imageData: pixels })
-    if (this.tracking.markers && this.tracking.markers.length > 0) {
-      this.tracking.markers.forEach((marker) => {
-        this.drawRectContainer({ ctx, corners: marker.corners, color: 'red', strokeWidth: 5 })
-      })
-      if (this.sceneItems.test && this.tracking.poses.length > 0) {
-        const { test } = this.sceneItems
-        if (test.rotation.z < Math.PI * 2) {
-          test.rotation.z += 0.1
-        }
-        const { poses } = this.tracking
-        const [pose] = poses
-        // rotation
-        // test.rotation.z = pose.bestRotation[0][0] // eslint-disable-line
-        // console.log(pose.bestRotation[0])
-        // test.rotation.z = pose.bestRotation[0][1] // eslint-disable-line
-        // test.rotation.x = pose.bestRotation[0][2] // eslint-disable-line
-        // position
-        // console.log(test)
-        const [x, y, z] = pose.bestTranslation
-        const denominator = this.camera.position.z
-        // test.position.x = x
-        // test.position.y = -(y / denominator) - ((canvas.height / 2) / denominator)
-        // test.position.z = -(z / denominator)
-        // test.position.x = (x / denominator) - (canvas.width / 2)
-        // test.position.y = -((y / denominator) - (canvas.height / 2))
-        // test.position.z = -(z / 100)
-        // test.position.set(...pose.bestTranslation)
-      }
-    }
-    this.renderer.render(this.scene, this.camera)
+    this.setCubes({ ctx })
+    this.renderScene()
   }
 
   // /////////////////////////////////
@@ -145,7 +175,7 @@ class TrackingView extends Base {
     if (this.props.hideCamera) classes += ' hide-camera'
     return (
       <div className={classes}>
-        <CameraView scale={1} onUpdate={this.onCameraUpdate} ref={ref => this.cameraView = ref} />
+        <CameraView scale={0.5} onUpdate={this.onCameraUpdate} ref={ref => this.cameraView = ref} />
         <canvas className="canvas-overlay" data-ref="canvasOverlay" />
       </div>
     )

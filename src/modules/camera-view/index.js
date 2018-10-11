@@ -33,6 +33,7 @@ class CameraView extends Base {
       this.streaming = true
       this.update()
     }).catch(() => {
+      console.error('Browser not supported')
       this.supported = false
     })
   }
@@ -56,7 +57,7 @@ class CameraView extends Base {
       this.video = document.createElement('video')
       this.video.setAttribute('muted', true)
       this.video.setAttribute('playsinline', true)
-      navigator[userMediaKey]({
+      window.navigator[userMediaKey]({
         audio: false,
         video: {
           width: 1280,
