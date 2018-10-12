@@ -1,4 +1,4 @@
-import { AR, POS1 } from 'js-aruco'
+import { AR, POS2 as POS } from 'js-aruco'
 
 export default class Tracking {
   constructor({ width, height }) {
@@ -14,7 +14,7 @@ export default class Tracking {
   setDefaults() {
     this.markerWidth = 5 // width in millimeters
     this.detector = new AR.Detector()
-    this.poser = new POS1.Posit(this.markerWidth, this.width)
+    this.poser = new POS.Posit(this.markerWidth, this.width)
     this.markers = {}
     // this.poses = {}
     // this.rotations = {}
@@ -26,7 +26,6 @@ export default class Tracking {
 
   getRotationForMarker() {
     if (this.poses.length > 0) {
-      debugger // eslint-disable-line
       this.getRotationFromMatrix(this.poses[0])
     }
     return null
@@ -34,8 +33,8 @@ export default class Tracking {
 
   getRotationFromMatrix(matrix) {
     const x = Math.atan2(matrix[2][1], matrix[2][2])
-    // const y = -Math.atan2(-matrix[2][0], Math.sqrt((matrix[2][1] ** 2) + (matrix[2][2] ** 2)))
-    const y = Math.asin(-matrix[2][0])
+    const y = -Math.atan2(-matrix[2][0], Math.sqrt((matrix[2][1] ** 2) + (matrix[2][2] ** 2)))
+    // const y = Math.asin(-matrix[2][0])
     const z = -Math.atan2(matrix[1][0], matrix[0][0])
     return { x, y, z }
   }

@@ -144,10 +144,10 @@ class TrackingView extends Base {
           // cube.position.y = vector.y
           // cube.position.z = vector.z
           const { x, y, z } = marker.rotation
-          cube.rotation.x = -x // correct
-          // cube.rotation.y = y
+          // cube.rotation.x = -x // correct
+          cube.rotation.y = -y
           // // console.log('y:', y, Math.PI / 2)
-          cube.rotation.z = -z // correct
+          // cube.rotation.z = -z // correct
         }
       })
     }
