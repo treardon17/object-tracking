@@ -131,24 +131,30 @@ class TrackingView extends Base {
         if (translate) {
           const [x, y, z] = marker.pose.bestTranslation
           const vector = this.getWorldVector({ x, y, z, width: this.width, height: this.height })
-          console.log(vector)
+          console.log(vector.x * 500)
+          cube.position.x = (1 - vector.x) * 100
+          // cube.position.y = vector.y
+          // cube.position.z = vector.z / 10
+          // cube.position.x += 0.1
+          // console.log(cube.position.x)
+          // console.log(cube.position)
         }
 
         // rotation
-        if (rotate) {
-          // const [x, y, z] = marker.pose.bestTranslation
-          // cube.position.x = x / base
-          // cube.position.y = -y / base
-          // cube.position.z = -z / base
-          // cube.position.x = vector.x
-          // cube.position.y = vector.y
-          // cube.position.z = vector.z
-          const { x, y, z } = marker.rotation
-          // cube.rotation.x = -x // correct
-          cube.rotation.y = -y
-          // // console.log('y:', y, Math.PI / 2)
-          // cube.rotation.z = -z // correct
-        }
+        // if (rotate) {
+        //   // const [x, y, z] = marker.pose.bestTranslation
+        //   // cube.position.x = x / base
+        //   // cube.position.y = -y / base
+        //   // cube.position.z = -z / base
+        //   // cube.position.x = vector.x
+        //   // cube.position.y = vector.y
+        //   // cube.position.z = vector.z
+        //   const { x, y, z } = marker.rotation
+        //   cube.rotation.x = x // correct
+        //   cube.rotation.y = y
+        //   // // console.log('y:', y, Math.PI / 2)
+        //   cube.rotation.z = z // correct
+        // }
       })
     }
   }

@@ -1,4 +1,4 @@
-import { AR, POS2 as POS } from 'js-aruco'
+import { AR, POS1 as POS } from 'js-aruco'
 
 export default class Tracking {
   constructor({ width, height }) {
@@ -33,9 +33,9 @@ export default class Tracking {
 
   getRotationFromMatrix(matrix) {
     const x = Math.atan2(matrix[2][1], matrix[2][2])
-    const y = -Math.atan2(-matrix[2][0], Math.sqrt((matrix[2][1] ** 2) + (matrix[2][2] ** 2)))
-    // const y = Math.asin(-matrix[2][0])
-    const z = -Math.atan2(matrix[1][0], matrix[0][0])
+    // const y = -Math.atan2(-matrix[2][0], Math.sqrt((matrix[2][1] ** 2) + (matrix[2][2] ** 2)))
+    const y = -Math.asin(-matrix[2][0])
+    const z = Math.atan2(matrix[1][0], matrix[0][0])
     return { x, y, z }
   }
 
