@@ -1,12 +1,12 @@
+import 'jsartoolkit5/js/artoolkit.api'
+import '@/libraries/threejs'
+import '@/libraries/threex'
 import React from 'react'
 import PropTypes from 'prop-types'
 import CameraView from 'modules/camera-view'
 import Base from 'modules/module-base'
 import './style.scss'
 
-import 'jsartoolkit5/js/artoolkit.api'
-import '@/libraries/threejs'
-import '@/libraries/threex'
 
 class ARView extends Base {
   componentDidMount() {
@@ -85,12 +85,12 @@ class ARView extends Base {
   setupARToolKitSource() {
     return new Promise((resolve) => {
       this.arToolkitSource = new THREEx.ArToolkitSource({
-        // // to read from the webcam 
+        // // to read from the webcam
         // sourceType: 'webcam',
 
         // // to read from an image
         // sourceType : 'image',
-        // sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/images/img.jpg',    
+        // sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/images/img.jpg',
 
         // to read from a video
         sourceType: 'video',
