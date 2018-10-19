@@ -1,6 +1,7 @@
 import 'jsartoolkit5/js/artoolkit.api'
 import '@/libraries/threejs'
 import '@/libraries/threex'
+import 'three/examples/js/loaders/OBJLoader'
 import React from 'react'
 import PropTypes from 'prop-types'
 import CameraView from 'modules/camera-view'
@@ -12,6 +13,7 @@ class ARView extends Base {
   componentDidMount() {
     super.componentDidMount()
     this.setDefaults()
+    // console.log('object loader is', new OBJLoader)
   }
 
 
@@ -31,16 +33,21 @@ class ARView extends Base {
   }
 
   setup() {
-    this.refs.canvasOverlay.width = this.width
-    this.refs.canvasOverlay.height = this.height
-    this.createScene()
-    this.setupARToolKit()
-    this.addCube({ name: 'cube1' })
-    this._isSetup = true
+    return new Promise((resolve, reject) => {
+      this.refs.canvasOverlay.width = this.width
+      this.refs.canvasOverlay.height = this.height
+      this.createScene()
+      this.setupARToolKit().then(() => {
+        // this.addCube({ name: 'cube1' })
+        this.addMonkey({ name: 'monkey' })
+        resolve()
+      }).catch(reject)
+      this._isSetup = true
+    })
   }
 
   // /////////////////////////////////
-  // SCENE
+  // THREEJS SCENE
   // /////////////////////////////////
   createScene() {
     // init renderer
@@ -54,6 +61,12 @@ class ARView extends Base {
     // Create a camera
     this.camera = new THREE.Camera()
     this.scene.add(this.camera)
+
+    // Setup loading manager
+    this.loadingManager = new THREE.LoadingManager()
+    this.loadingManager.onProgress = (item, loaded, total) => {
+      console.log(item, loaded, total)
+    }
   }
 
   addCube({ name }) {
@@ -67,6 +80,22 @@ class ARView extends Base {
     mesh.position.y = geometry.parameters.height / 2
     this.scene.add(mesh)
     if (name) this.sceneItems[name] = mesh
+  }
+
+  addMonkey({ name }) {
+    return new Promise((resolve) => {
+      const loader = new THREE.OBJLoader(this.loadingManager)
+      loader.load('/assets/mesh/monkeyAward.obj', (obj) => {
+        console.log(obj)
+        obj.position.y = 2.5 * 0.5
+        obj.scale.x = 0.5
+        obj.scale.y = 0.5
+        obj.scale.z = 0.5
+        this.scene.add(obj)
+        if (name) this.sceneItems[name] = obj
+        resolve()
+      })
+    })
   }
 
   // /////////////////////////////////
