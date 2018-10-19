@@ -32,11 +32,48 @@ export default class Tracking {
   }
 
   getRotationFromMatrix(matrix) {
-    const x = Math.atan2(matrix[2][1], matrix[2][2])
-    // const y = -Math.atan2(-matrix[2][0], Math.sqrt((matrix[2][1] ** 2) + (matrix[2][2] ** 2)))
-    const y = -Math.asin(-matrix[2][0])
-    const z = Math.atan2(matrix[1][0], matrix[0][0])
-    return { x, y, z }
+    // const x = Math.atan2(matrix[2][1], matrix[2][2])
+    // // const y = -Math.atan2(-matrix[2][0], Math.sqrt((matrix[2][1] ** 2) + (matrix[2][2] ** 2)))
+    // const y = -Math.asin(-matrix[2][0])
+    // const z = Math.atan2(matrix[1][0], matrix[0][0])
+    const [r11, r12, r13] = matrix[0]
+    const [r21, r22, r23] = matrix[1]
+    const [r31, r32, r33] = matrix[2]
+
+    const vector = { x: 0, y: 0, z: 0 }
+
+    if (r31 !== 1 && r31 !== -1) {
+      const y1 = -Math.sin(r31)
+      const y2 = Math.PI - y1
+
+      const x1 = Math.atan2((r32 / Math.cos(y1)), (r33 / Math.cos(y1)))
+      const x2 = Math.atan2((r32 / Math.cos(y2)), (r33 / Math.cos(y2)))
+
+      const z1 = Math.atan2((r21 / Math.cos(y1)), (r11 / Math.cos(y1)))
+      const z2 = Math.atan2((r21 / Math.cos(y2)), (r11 / Math.cos(y2)))
+
+      vector.x = x2
+      vector.y = y2
+      vector.z = z2
+    } else if (r31 === -1) {
+      const z = 0
+      const y = Math.PI / 2
+      const x = -z + Math.atan2(r12, r13)
+
+      vector.x = x
+      vector.y = y
+      vector.z = z
+    } else if (r31 === 1) {
+      const z = 0
+      const y = -Math.PI / 2
+      const x = -z + Math.atan2(-r12, -r13)
+
+      vector.x = x
+      vector.y = y
+      vector.z = z
+    }
+
+    return vector
   }
 
   getPoseForMarker(marker) {

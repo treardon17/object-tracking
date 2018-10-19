@@ -4,9 +4,12 @@ import PropTypes from 'prop-types'
 import CameraView from 'modules/camera-view'
 import Base from 'modules/module-base'
 import Tracking from '@/scripts/tracking'
-import BABYLON from 'babylonjs'
+import * as BABYLON from 'babylonjs'
+import 'babylonjs-loaders'
 // import Util from '@/util'
 import './style.scss'
+import { debug } from 'util'
+// import MonkeyMesh from '@/assets/mesh/monkeyAward.obj'
 
 
 class TrackingView extends Base {
@@ -37,6 +40,9 @@ class TrackingView extends Base {
   setScene({ width, height }) {
     this.refs.canvasOverlay.width = width
     this.refs.canvasOverlay.height = height
+
+    BABYLON.OBJFileLoader.OPTIMIZE_WITH_UV = true
+
     this.engine = new BABYLON.Engine(this.refs.canvasOverlay, true, { preserveDrawingBuffer: true, stencil: true })
     this.scene = new BABYLON.Scene(this.engine)
     this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 0)
@@ -47,6 +53,8 @@ class TrackingView extends Base {
     this.light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0), this.scene)
 
     this.sceneItems = {}
+
+    this.addCustomMeshIfNeeded({ name: 'monkey' })
   }
 
   addCubeIfNeeded({ name }) {
@@ -62,6 +70,25 @@ class TrackingView extends Base {
     }
   }
 
+  addCustomMeshIfNeeded({ name }) {
+    return new Promise((resolve, reject) => {
+      const myMesh = BABYLON.SceneLoader.ImportMesh('', '/assets/mesh/', 'monkeyAward.obj', this.scene, (newMeshes) => {
+        const [mesh] = newMeshes
+        console.log('success', mesh)
+        mesh.scaling.x = -1
+        mesh.setPivotPoint(new BABYLON.Vector3(0, 0, -0.2))
+        // this.camera.target = mesh
+        this.sceneItems[name] = mesh
+        resolve()
+      }, (progress) => {
+        console.log('progress', progress)
+      }, (scene, message, exception) => {
+        console.log('error', message, exception)
+        reject(message, exception)
+      })
+    })
+  }
+
   removeCube({ name }) {
     const cube = this.sceneItems[name]
     if (cube) cube.dispose()
@@ -69,14 +96,14 @@ class TrackingView extends Base {
   }
 
   removeExtraCubes() {
-    if (this.tracking.markers) {
-      const markerKeys = Object.keys(this.tracking.markers)
-      const sceneKeys = Object.keys(this.sceneItems)
-      const keysToRemove = sceneKeys.filter(i => markerKeys.indexOf(i) < 0)
-      keysToRemove.forEach((name) => {
-        this.removeCube({ name })
-      })
-    }
+    // if (this.tracking.markers) {
+    //   const markerKeys = Object.keys(this.tracking.markers)
+    //   const sceneKeys = Object.keys(this.sceneItems)
+    //   const keysToRemove = sceneKeys.filter(i => markerKeys.indexOf(i) < 0)
+    //   keysToRemove.forEach((name) => {
+    //     this.removeCube({ name })
+    //   })
+    // }
   }
 
   // /////////////////////////////////
@@ -125,36 +152,40 @@ class TrackingView extends Base {
       this.removeExtraCubes()
       this.tracking.markerList.forEach((marker) => {
         this.drawRectContainer({ ctx, corners: marker.corners, color: 'red', strokeWidth: 5 })
-        this.addCubeIfNeeded({ name: marker.id })
-        const cube = this.sceneItems[marker.id]
+        // this.addCubeIfNeeded({ name: marker.id })
+        // const cube = this.sceneItems[marker.id]
+        const cube = this.sceneItems.monkey
         // translation
-        if (translate) {
-          const [x, y, z] = marker.pose.bestTranslation
-          const vector = this.getWorldVector({ x, y, z, width: this.width, height: this.height })
-          console.log(vector.x * 500)
-          cube.position.x = (1 - vector.x) * 100
-          // cube.position.y = vector.y
-          // cube.position.z = vector.z / 10
-          // cube.position.x += 0.1
-          // console.log(cube.position.x)
-          // console.log(cube.position)
-        }
+        // if (translate) {
+        //   const [x, y, z] = marker.pose.bestTranslation
+        //   const vector = this.getWorldVector({ x, y, z, width: this.width, height: this.height })
+        //   console.log(vector.x * 500)
+        //   cube.position.x = (1 - vector.x) * 100
+        //   cube.position.y = vector.y
+        //   cube.position.z = vector.z / 10
+        //   cube.position.x += 0.1
+        //   console.log(cube.position.x)
+        //   console.log(cube.position)
+        // }
 
         // rotation
-        // if (rotate) {
-        //   // const [x, y, z] = marker.pose.bestTranslation
-        //   // cube.position.x = x / base
-        //   // cube.position.y = -y / base
-        //   // cube.position.z = -z / base
-        //   // cube.position.x = vector.x
-        //   // cube.position.y = vector.y
-        //   // cube.position.z = vector.z
-        //   const { x, y, z } = marker.rotation
-        //   cube.rotation.x = x // correct
-        //   cube.rotation.y = y
-        //   // // console.log('y:', y, Math.PI / 2)
-        //   cube.rotation.z = z // correct
-        // }
+        if (rotate) {
+          // const [x, y, z] = marker.pose.bestTranslation
+          // cube.position.x = x / base
+          // cube.position.y = -y / base
+          // cube.position.z = -z / base
+          // cube.position.x = vector.x
+          // cube.position.y = vector.y
+          // cube.position.z = vector.z
+          const { x, y, z } = marker.rotation
+          // cube.rotation.x = x
+          // cube.rotation.y = y
+          // cube.rotaiton.z = z
+          cube.rotation.x = x - (0.5 * Math.PI) // correct
+          cube.rotation.y = y - (Math.PI)
+          // // // console.log('y:', y, Math.PI / 2)
+          cube.rotation.z = z // correct
+        }
       })
     }
   }

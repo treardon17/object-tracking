@@ -22,6 +22,7 @@
     "webpack 3"
   ],
   "dependencies": {
+    "ar.js": "^1.6.2",
     "babel-cli": "^6.26.0",
     "babel-eslint": "^8.2.2",
     "babel-loader": "^7.1.4",
@@ -35,6 +36,7 @@
     "babel-register": "^6.26.0",
     "babel-runtime": "^6.26.0",
     "babylonjs": "^3.3.0",
+    "babylonjs-loaders": "^3.3.0",
     "body-parser": "^1.18.2",
     "chalk": "^2.3.2",
     "chokidar": "^2.0.4",
@@ -60,7 +62,8 @@
     "react-dom": "^16.2.0",
     "react-router": "^4.2.0",
     "react-router-dom": "^4.2.2",
-    "react-test-renderer": "^16.2.0"
+    "react-test-renderer": "^16.2.0",
+    "three": "^0.97.0"
   },
   "devDependencies": {
     "eslint": "^4.19.1",
