@@ -49,7 +49,7 @@ const config = {
         // eslint all vue and js files
         // before compilation
         test: /\.(jsx?|js)$/,
-        exclude: /node_modules/,
+        exclude: [/node_modules/, /libraries/],
         include: path.resolve('./src'),
         use: [{
           loader: 'eslint-loader',

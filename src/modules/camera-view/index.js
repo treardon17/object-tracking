@@ -18,6 +18,13 @@ class CameraView extends Base {
     return this.props.scale || 1
   }
 
+  get url() {
+    if (this.video && this.video.srcObject) {
+      return URL.createObjectURL(this.video.srcObject)
+    }
+    return null
+  }
+
   start() {
     this.setupCamera()
   }

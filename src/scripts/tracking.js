@@ -40,6 +40,10 @@ export default class Tracking {
     const [r21, r22, r23] = matrix[1]
     const [r31, r32, r33] = matrix[2]
 
+    // const [r11, r21, r31] = matrix[0]
+    // const [r12, r22, r32] = matrix[1]
+    // const [r13, r23, r33] = matrix[2]
+
     const vector = { x: 0, y: 0, z: 0 }
 
     if (r31 !== 1 && r31 !== -1) {
@@ -52,9 +56,9 @@ export default class Tracking {
       const z1 = Math.atan2((r21 / Math.cos(y1)), (r11 / Math.cos(y1)))
       const z2 = Math.atan2((r21 / Math.cos(y2)), (r11 / Math.cos(y2)))
 
-      vector.x = x2
-      vector.y = y2
-      vector.z = z2
+      vector.x = x1
+      vector.y = y1
+      vector.z = z1
     } else if (r31 === -1) {
       const z = 0
       const y = Math.PI / 2
@@ -79,6 +83,7 @@ export default class Tracking {
   getPoseForMarker(marker) {
     const { corners } = marker
     const pose = this.poser.pose(corners)
+    console.log('pose', pose)
     return pose
   }
 
