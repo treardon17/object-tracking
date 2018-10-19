@@ -58,9 +58,13 @@ class ARView extends Base {
     })
     // init scene and camera
     this.scene = new THREE.Scene()
-    // Create a camera
+    // create a camera
     this.camera = new THREE.Camera()
     this.scene.add(this.camera)
+    // add light
+    this.light = new THREE.DirectionalLight(0xffffff)
+    this.light.position.set(0, 1, 1).normalize()
+    this.scene.add(this.light)
 
     // Setup loading manager
     this.loadingManager = new THREE.LoadingManager()
@@ -86,11 +90,18 @@ class ARView extends Base {
     return new Promise((resolve) => {
       const loader = new THREE.OBJLoader(this.loadingManager)
       loader.load('/assets/mesh/monkeyAward.obj', (obj) => {
-        console.log(obj)
+        // scale monkey
         obj.position.y = 2.5 * 0.5
         obj.scale.x = 0.5
         obj.scale.y = 0.5
         obj.scale.z = 0.5
+
+        const material = new THREE.MeshPhongMaterial({ ambient: 0x050505, color: 0xffffff, specular: 0x555555, shininess: 30 })
+
+        obj.traverse((child) => {
+          if (child instanceof THREE.Mesh) child.material = material
+        })
+
         this.scene.add(obj)
         if (name) this.sceneItems[name] = obj
         resolve()
@@ -127,6 +138,7 @@ class ARView extends Base {
       })
       this.arToolkitSource.init(() => {
         this.arToolkitSource.onResize()
+        this.arToolkitSource.domElement.style.visibility = 'hidden'
         resolve()
       })
     })
