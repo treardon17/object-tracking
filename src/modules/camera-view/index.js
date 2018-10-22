@@ -19,8 +19,9 @@ class CameraView extends Base {
   }
 
   get url() {
-    if (this.video && this.video.srcObject) {
-      return URL.createObjectURL(this.video.srcObject)
+    if (this.stream) {
+      const url = URL.createObjectURL(this.stream)
+      return url
     }
     return null
   }

@@ -10,10 +10,11 @@ import './style.scss'
 
 
 class ARView extends Base {
+
   componentDidMount() {
     super.componentDidMount()
     this.setDefaults()
-    // console.log('object loader is', new OBJLoader)
+    this.setupIfNeeded()
   }
 
 
@@ -22,33 +23,83 @@ class ARView extends Base {
   // /////////////////////////////////
   setDefaults() {
     this.sceneItems = {}
+    this.arStatus = null
   }
 
-  setupIfNeeded({ width, height }) {
-    if (!this._isSetup) {
-      this.width = width
-      this.height = height
-      this.setup()
-    }
+  setupIfNeeded() {
+    return new Promise((resolve, reject) => {
+      if (!this.arStatus || (this.arStatus !== 'ready' && this.arStatus !== 'loading')) {
+        this.arStatus = 'loading'
+        this.setup().then(() => {
+          this.arStatus = 'ready'
+          resolve()
+        }).catch(reject)
+      }
+    })
   }
 
   setup() {
     return new Promise((resolve, reject) => {
-      this.refs.canvasOverlay.width = this.width
-      this.refs.canvasOverlay.height = this.height
       this.createScene()
       this.setupARToolKit().then(() => {
-        // this.addCube({ name: 'cube1' })
-        this.addMonkey({ name: 'monkey' })
+        this.addCube({ name: 'cube1' })
+        // this.addMonkey({ name: 'monkey' })
+        this.renderScene()
         resolve()
       }).catch(reject)
-      this._isSetup = true
     })
   }
 
+  setDimensions() {
+    const { width, height } = this.fsVideoDimensions
+    this.width = width
+    this.height = height
+    this.el.style.width = `${width}px`
+    this.el.style.height = `${height}px`
+    const { canvasOverlay, canvasVideo } = this.refs
+    // video
+    canvasVideo.width = width
+    canvasVideo.height = height
+    // 3d overlay
+    canvasOverlay.width = width
+    canvasOverlay.height = height
+
+    if (this.renderer) {
+      this.renderer.setSize(width, height)
+    }
+    
+    // this.arToolkitSource.onResize()
+    // if (this.arToolkitContext && this.arToolkitContext.arController) {
+    //   this.arToolkitSource.copySizeTo(this.arToolkitContext.arController.canvas)
+    // }
+  }
+
+  // resize() {
+  //   // this.arToolkitSource.onResizeElement()
+  //   this.setDimensions()
+  // }
+
   // /////////////////////////////////
   // THREEJS SCENE
-  // /////////////////////////////////
+  // ////////////////////////fs
+  get fsVideoDimensions() {
+    const { videoWidth, videoHeight } = this.sourceVideo
+    const parentWidth = window.innerWidth
+    const parentHeight = window.innerHeight
+    let width
+    let height
+    if (parentWidth > parentHeight) {
+      const proportion = videoHeight / videoWidth
+      width = parentWidth
+      height = parentWidth * proportion
+    } else {
+      const proportion = videoWidth / videoHeight
+      width = parentHeight * proportion
+      height = parentHeight
+    }
+    return { width, height }
+  }
+
   createScene() {
     // init renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -126,19 +177,36 @@ class ARView extends Base {
     return new Promise((resolve) => {
       this.arToolkitSource = new THREEx.ArToolkitSource({
         // // to read from the webcam
-        // sourceType: 'webcam',
+        sourceType: 'webcam',
 
         // // to read from an image
         // sourceType : 'image',
         // sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/images/img.jpg',
 
         // to read from a video
-        sourceType: 'video',
-        sourceUrl: this.cameraView.url
+        // sourceType: 'video',
+        // sourceUrl: this.cameraView.stream
       })
       this.arToolkitSource.init(() => {
-        this.arToolkitSource.onResize()
-        this.arToolkitSource.domElement.style.visibility = 'hidden'
+        this.sourceVideo = this.arToolkitSource.domElement
+        // remove the other videos the library adds to the page
+        const arDomID = 'ar-webcam-source'
+        const arVideos = document.querySelectorAll(`.${arDomID}`)
+        for (let i = 0; i < arVideos.length; i += 1) document.body.removeChild(arVideos[i])
+        // make it easy to reference in the future
+        this.sourceVideo.classList.add(arDomID)
+        this.sourceVideo.style.position = 'fixed'
+        this.sourceVideo.style.top = '0'
+        this.sourceVideo.style.opacity = '0'
+        // this.sourceVideo.style.position = 'absolute'
+        // this.sourceVideo.style.top = '0'
+        // this.sourceVideo.style.left = '0'
+        // this.sourceVideo.style.right = '0'
+        
+        // this.sourceVideo.style.width = this.width
+        // this.sourceVideo.style.height = this.height
+        // this.resize()
+        this.setDimensions()
         resolve()
       })
     })
@@ -185,8 +253,8 @@ class ARView extends Base {
   // /////////////////////////////////
   // ACTIONS
   // /////////////////////////////////
-  start() { this.cameraView.start() }
-  stop() { this.cameraView.stop() }
+  // start() { this.cameraView.start() }
+  // stop() { this.cameraView.stop() }
 
   // /////////////////////////////////
   // EVENTS
@@ -199,19 +267,34 @@ class ARView extends Base {
   // /////////////////////////////////
   // RENDER
   // /////////////////////////////////
+  renderVideo() {
+    const { canvasVideo } = this.refs
+    if (canvasVideo) {
+      const ctx = canvasVideo.getContext('2d')
+      const { width, height } = this.fsVideoDimensions
+      const x = (canvasVideo.width / 2) - (width / 2)
+      const y = (canvasVideo.height / 2) - (height / 2)
+      ctx.clearRect(0, 0, canvasVideo.width, canvasVideo.height)
+      ctx.drawImage(this.sourceVideo, x, y, width, height)
+      // ctx.drawImage(this.sourceVideo, 0, 0, canvasVideo.width, canvasVideo.height)
+    }
+  }
+
   renderScene() {
-    if (this.renderer && typeof this.renderer.render === 'function') {
+    requestAnimationFrame(this.renderScene.bind(this))
+    this.renderVideo()
+    if (this.arStatus === 'ready' && this.renderer && typeof this.renderer.render === 'function') {
       this.renderer.render(this.scene, this.camera)
       this.renderARToolkit()
     }
   }
 
   render() {
-    let classes = 'tracking-view'
+    let classes = 'ar-view'
     if (this.props.hideCamera) classes += ' hide-camera'
     return (
-      <div className={classes}>
-        <CameraView scale={0.5} onUpdate={this.onCameraUpdate} ref={ref => this.cameraView = ref} />
+      <div className={classes} ref={(ref) => { this.el = ref }}>
+        <canvas className="canvas-video" data-ref="canvasVideo" />
         <canvas className="canvas-overlay" data-ref="canvasOverlay" />
       </div>
     )

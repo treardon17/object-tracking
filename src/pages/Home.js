@@ -3,7 +3,7 @@ import ARView from '@/modules/ar-view'
 
 class Home extends React.Component {
   componentDidMount() {
-    this.cameraView.start()
+    // this.cameraView.start()
   }
 
   render() {
