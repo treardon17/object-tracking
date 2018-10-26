@@ -35,7 +35,8 @@ module.exports = {
     "new-cap": 0,
     "no-plusplus": 0,
     "no-bitwise": 0,
-    "no-debugger": 0
+    "no-debugger": 0,
+    "no-param-reassign": 0
   },
   "env": {
     "browser": true,

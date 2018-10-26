@@ -10,7 +10,6 @@ import './style.scss'
 
 
 class ARView extends Base {
-
   componentDidMount() {
     super.componentDidMount()
     this.setDefaults()
@@ -50,55 +49,9 @@ class ARView extends Base {
     })
   }
 
-  setDimensions() {
-    const { width, height } = this.fsVideoDimensions
-    this.width = width
-    this.height = height
-    this.el.style.width = `${width}px`
-    this.el.style.height = `${height}px`
-    const { canvasOverlay, canvasVideo } = this.refs
-    // video
-    canvasVideo.width = width
-    canvasVideo.height = height
-    // 3d overlay
-    canvasOverlay.width = width
-    canvasOverlay.height = height
-
-    if (this.renderer) {
-      this.renderer.setSize(width, height)
-    }
-    
-    // this.arToolkitSource.onResize()
-    // if (this.arToolkitContext && this.arToolkitContext.arController) {
-    //   this.arToolkitSource.copySizeTo(this.arToolkitContext.arController.canvas)
-    // }
-  }
-
-  // resize() {
-  //   // this.arToolkitSource.onResizeElement()
-  //   this.setDimensions()
-  // }
-
   // /////////////////////////////////
   // THREEJS SCENE
-  // ////////////////////////fs
-  get fsVideoDimensions() {
-    const { videoWidth, videoHeight } = this.sourceVideo
-    const parentWidth = window.innerWidth
-    const parentHeight = window.innerHeight
-    let width
-    let height
-    if (parentWidth > parentHeight) {
-      const proportion = videoHeight / videoWidth
-      width = parentWidth
-      height = parentWidth * proportion
-    } else {
-      const proportion = videoWidth / videoHeight
-      width = parentHeight * proportion
-      height = parentHeight
-    }
-    return { width, height }
-  }
+  // ////////////////////////
 
   createScene() {
     // init renderer
@@ -198,14 +151,6 @@ class ARView extends Base {
         this.sourceVideo.style.position = 'fixed'
         this.sourceVideo.style.top = '0'
         this.sourceVideo.style.opacity = '0'
-        // this.sourceVideo.style.position = 'absolute'
-        // this.sourceVideo.style.top = '0'
-        // this.sourceVideo.style.left = '0'
-        // this.sourceVideo.style.right = '0'
-        
-        // this.sourceVideo.style.width = this.width
-        // this.sourceVideo.style.height = this.height
-        // this.resize()
         this.setDimensions()
         resolve()
       })
@@ -251,17 +196,56 @@ class ARView extends Base {
   }
 
   // /////////////////////////////////
-  // ACTIONS
+  // SIZING
   // /////////////////////////////////
-  // start() { this.cameraView.start() }
-  // stop() { this.cameraView.stop() }
 
-  // /////////////////////////////////
-  // EVENTS
-  // /////////////////////////////////
-  onCameraUpdate = ({ pixels, canvas, ctx }) => {
-    this.setupIfNeeded({ width: canvas.width, height: canvas.height })
-    this.renderScene()
+  // resize() {
+  //   // this.arToolkitSource.onResizeElement()
+  //   this.setDimensions()
+  // }
+
+  get fsVideoDimensions() {
+    const { videoWidth, videoHeight } = this.sourceVideo
+    const parentWidth = window.innerWidth
+    const parentHeight = window.innerHeight
+    let width
+    let height
+    if (parentWidth > parentHeight) {
+      const proportion = videoHeight / videoWidth
+      width = parentWidth
+      height = parentWidth * proportion
+    } else {
+      const proportion = videoWidth / videoHeight
+      width = parentHeight * proportion
+      height = parentHeight
+    }
+    return { width, height, videoWidth, videoHeight }
+  }
+
+  setDimensions() {
+    const { width, height, videoWidth, videoHeight } = this.fsVideoDimensions
+    this.width = videoWidth
+    this.height = videoHeight
+    this.el.style.width = `${this.width}px`
+    this.el.style.height = `${this.height}px`
+    const { canvasOverlay, canvasVideo } = this.refs
+    // video
+    canvasVideo.width = this.width
+    canvasVideo.height = this.height
+    // 3d overlay
+    canvasOverlay.width = this.width
+    canvasOverlay.height = this.height
+
+    if (this.renderer) {
+      this.renderer.setSize(this.width, this.height, false)
+      // this.camera.aspect = videoHeight / videoWidth
+      // this.camera.updateProjectionMatrix()
+    }
+    this.arToolkitSource.onResize()
+    if (this.arToolkitContext && this.arToolkitContext.arController) {
+      this.arToolkitSource.copySizeTo(this.renderer.domElement)
+      this.arToolkitSource.copySizeTo(this.arToolkitContext.arController.canvas)
+    }
   }
 
   // /////////////////////////////////
@@ -271,12 +255,11 @@ class ARView extends Base {
     const { canvasVideo } = this.refs
     if (canvasVideo) {
       const ctx = canvasVideo.getContext('2d')
-      const { width, height } = this.fsVideoDimensions
-      const x = (canvasVideo.width / 2) - (width / 2)
-      const y = (canvasVideo.height / 2) - (height / 2)
+      // const { width, height } = this.fsVideoDimensions
+      // const x = (canvasVideo.width / 2) - (width / 2)
+      // const y = (canvasVideo.height / 2) - (height / 2)
       ctx.clearRect(0, 0, canvasVideo.width, canvasVideo.height)
-      ctx.drawImage(this.sourceVideo, x, y, width, height)
-      // ctx.drawImage(this.sourceVideo, 0, 0, canvasVideo.width, canvasVideo.height)
+      ctx.drawImage(this.sourceVideo, 0, 0, canvasVideo.width, canvasVideo.height)
     }
   }
 
