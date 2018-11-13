@@ -18,6 +18,20 @@ class CameraView extends Base {
     return this.props.scale || 1
   }
 
+  get videoWidth() {
+    if (this.video) {
+      return this.video.videoWidth
+    }
+    return 0
+  }
+
+  get videoHeight() {
+    if (this.video) {
+      return this.video.videoHeight
+    }
+    return 0
+  }
+
   get url() {
     if (this.stream) {
       const url = URL.createObjectURL(this.stream)
@@ -26,23 +40,23 @@ class CameraView extends Base {
     return null
   }
 
-  start() {
-    this.setupCamera()
-  }
-
   stop() {
     this.video = null
     this.streaming = false
     if (this.track) this.track.stop()
   }
 
-  setupCamera() {
-    this.initCameraFeed().then(() => {
-      this.streaming = true
-      this.update()
-    }).catch(() => {
-      console.error('Browser not supported')
-      this.supported = false
+  start() {
+    return new Promise((resolve, reject) => {
+      this.initCameraFeed().then(() => {
+        this.streaming = true
+        this.update()
+        resolve()
+      }).catch(() => {
+        console.error('Browser not supported')
+        this.supported = false
+        reject()
+      })
     })
   }
 
@@ -98,7 +112,7 @@ class CameraView extends Base {
       if (typeof this.props.onUpdate === 'function') {
         const { canvas } = this.refs
         const pixels = this.getPixels({ x: 0, y: 0, width: canvas.width, height: canvas.height })
-        this.props.onUpdate({ pixels, canvas, ctx: canvas.getContext('2d') })
+        this.props.onUpdate({ pixels, canvas, ctx: canvas.getContext('2d'), video: this.video })
       }
     }
   }
