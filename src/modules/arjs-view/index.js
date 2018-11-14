@@ -1,10 +1,10 @@
-// import 'jsartoolkit5/js/artoolkit.api'
-// import '@/libraries/threejs'
-// import '@/libraries/threex'
+import 'jsartoolkit5/js/artoolkit.api'
+import '@/libraries/threejs'
+import '@/libraries/threex'
 import 'three/examples/js/loaders/OBJLoader'
 import React from 'react'
 import PropTypes from 'prop-types'
-import CameraView from 'modules/camera-view'
+// import CameraView from 'modules/camera-view'
 import Base from 'modules/module-base'
 import './style.scss'
 import { debug } from 'util'
@@ -58,7 +58,8 @@ class ARJSView extends Base {
   // /////////////////////////////////
   onResize() {
     // this.arToolkitSource.onResize()
-    // this.arToolkitSource.copySizeTo(this.renderer.domElement)
+    // this.arToolkitSource.copySizeTo(this.refs.canvasVideo)
+    this.arToolkitSource.copySizeTo(this.refs.canvasOverlay)
     // this.width = parseInt(this.renderer.domElement.style.width, 10)
     // this.height = parseInt(this.renderer.domElement.style.height, 10)
     // if (this.arToolkitSource.arController != null) {
@@ -203,9 +204,15 @@ class ARJSView extends Base {
   // /////////////////////////////////
   // RENDER
   // /////////////////////////////////
+  renderVideo() {
+    const ctx = this.refs.canvasVideo.getContext('2d')
+    ctx.drawImage(this.sourceVideo, 0, 0, 640, 480)
+  }
+
   renderScene() {
     window.requestAnimationFrame(this.renderScene.bind(this))
     if (this.arStatus === 'ready' && this.renderer && typeof this.renderer.render === 'function') {
+      // this.renderVideo()
       this.renderer.render(this.scene, this.camera)
       this.renderARToolkit()
     }
@@ -216,8 +223,10 @@ class ARJSView extends Base {
     if (this.props.hideCamera) classes += ' hide-camera'
     return (
       <div className={classes} ref={(ref) => { this.el = ref }}>
-        {/* <canvas className="canvas-video" data-ref="canvasVideo" /> */}
-        <canvas className="canvas-overlay" data-ref="canvasOverlay" />
+        <div className="arjs-view-inner">
+          {/* <canvas className="canvas-video" data-ref="canvasVideo" /> */}
+          <canvas className="canvas-overlay" data-ref="canvasOverlay" />
+        </div>
       </div>
     )
   }

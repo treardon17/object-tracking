@@ -2,4 +2,16 @@
 @import "~styles/_mixins";
 
 .arjs-view {
+  display: inline-block;
+  .arjs-view-inner{
+    position: relative;
+  }
+  .canvas-overlay, .canvas-video{
+    margin-left: 0 !important;
+  }
+  .canvas-overlay{
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 }

@@ -1,0 +1,69 @@
+{
+  "_from": "jsartoolkit5",
+  "_id": "jsartoolkit5@0.0.4",
+  "_inBundle": false,
+  "_integrity": "sha1-JPj2IX+/aF8S8csjvWHYwQFHCQI=",
+  "_location": "/jsartoolkit5",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "jsartoolkit5",
+    "name": "jsartoolkit5",
+    "escapedName": "jsartoolkit5",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/jsartoolkit5/-/jsartoolkit5-0.0.4.tgz",
+  "_shasum": "24f8f6217fbf685f12f1cb23bd61d8c101470902",
+  "_spec": "jsartoolkit5",
+  "_where": "/Users/tylerr/sites/object-tracking",
+  "author": {
+    "name": "ARToolKit",
+    "url": "https://github.com/artoolkit"
+  },
+  "bugs": {
+    "url": "https://github.com/artoolkit/jsartoolkit5/issues"
+  },
+  "bundleDependencies": false,
+  "contributors": [
+    {
+      "name": "Github Contributors",
+      "url": "https://github.com/artoolkit/jsartoolkit5/graphs/contributors"
+    }
+  ],
+  "dependencies": {},
+  "deprecated": false,
+  "description": "Emscripten port of ARToolKit to JavaScript",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-jsdoc": "^1.1.0",
+    "ink-docstrap": "^1.1.4",
+    "jsdoc": "^3.4.0",
+    "watch": "^0.18.0"
+  },
+  "homepage": "https://github.com/artoolkit/jsartoolkit5",
+  "keywords": [
+    "ARToolKit",
+    "AR",
+    "Augmented Reality"
+  ],
+  "license": "LGPL-3.0",
+  "main": "js/index",
+  "name": "jsartoolkit5",
+  "repository": {
+    "type": "git",
+    "url": "git://https://github.com/artoolkit/jsartoolkit5.git"
+  },
+  "scripts": {
+    "build": "node tools/makem.js; echo Built at `date`",
+    "watch": "watch 'npm run build' ./js/"
+  },
+  "typings": "js/index",
+  "version": "0.0.4"
+}
