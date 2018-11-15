@@ -6,6 +6,7 @@ const { THREE } = window
 THREE.LoaderUtils = LoaderUtils
 import 'three/examples/js/loaders/OBJLoader'
 import 'three/examples/js/loaders/GLTFLoader'
+import 'three/examples/js/loaders/ColladaLoader'
 import './style.scss'
 /* eslint-enable */
 
@@ -68,7 +69,8 @@ class Template extends Base {
     this.scene.add(this.light)
     this.scene.visible = false
 
-    this.addHorse({ name: 'monkey' })
+    // this.addHorse({ name: 'hidalgo' })
+    this.addStormTrooper({ name: 'vader' })
   }
 
   setARToolkit() {
@@ -154,6 +156,31 @@ class Template extends Base {
 
         if (name) {
           this.sceneItems[name] = mesh
+          this.mixers[name] = mixer
+        }
+
+        resolve()
+      })
+    })
+  }
+
+  addStormTrooper({ name }) {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.ColladaLoader()
+      loader.load('/assets/mesh/stormtrooper/stormtrooper.dae', (collada) => {
+        const { animations } = collada
+        const avatar = collada.scene
+        avatar.traverse((node) => {
+          if (node.isScinnedMesh) {
+            node.frustumCulled = false
+          }
+        })
+        const mixer = new THREE.AnimationMixer(avatar)
+        const action = mixer.clipAction(animations[0]).play()
+        this.scene.add(avatar)
+
+        if (name) {
+          this.sceneItems[name] = avatar
           this.mixers[name] = mixer
         }
 
