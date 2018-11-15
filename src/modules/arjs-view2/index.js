@@ -1,9 +1,15 @@
 import React from 'react'
 import Base from 'modules/module-base'
-import 'three/examples/js/loaders/OBJLoader'
-import './style.scss'
+/* eslint-disable */
+import { LoaderUtils } from 'three'
 const { THREE } = window
+THREE.LoaderUtils = LoaderUtils
+import 'three/examples/js/loaders/OBJLoader'
+import 'three/examples/js/loaders/GLTFLoader'
+import './style.scss'
+/* eslint-enable */
 
+console.log(LoaderUtils)
 
 class Template extends Base {
   componentDidMount() {
@@ -31,7 +37,10 @@ class Template extends Base {
     this.width = 640
     this.height = 480
     this.fps = 60
+    this.time = Date.now()
+    this.prevTime = Date.now()
     this.sceneItems = {}
+    this.mixers = {}
   }
 
 
@@ -59,7 +68,7 @@ class Template extends Base {
     this.scene.add(this.light)
     this.scene.visible = false
 
-    this.addMonkey({ name: 'monkey' })
+    this.addHorse({ name: 'monkey' })
   }
 
   setARToolkit() {
@@ -132,6 +141,36 @@ class Template extends Base {
     })
   }
 
+  addHorse({ name }) {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.GLTFLoader()
+      loader.load('/assets/mesh/horse.glb', (gltf) => {
+        const mesh = gltf.scene.children[0]
+        const scale = 0.01
+        mesh.scale.set(scale, scale, scale)
+        this.scene.add(mesh)
+        const mixer = new THREE.AnimationMixer(mesh)
+        mixer.clipAction(gltf.animations[0]).setDuration(1).play()
+
+        if (name) {
+          this.sceneItems[name] = mesh
+          this.mixers[name] = mixer
+        }
+
+        resolve()
+      })
+    })
+  }
+
+  renderMixers() {
+    this.prevTime = this.time
+    this.time = Date.now()
+    Object.keys(this.mixers).forEach((key) => {
+      const mixer = this.mixers[key]
+      mixer.update((this.time - this.prevTime) * 0.001)
+    })
+  }
+
   renderARToolkit() {
     if (this.arToolkitSource.ready === false) return
     this.arToolkitContext.update(this.arToolkitSource.domElement)
@@ -144,6 +183,7 @@ class Template extends Base {
     if (!this.renderCount) this.renderCount = 0
     else this.renderCount += 1
     if (this.renderCount % 500 === 0) this.renderer.render(this.scene, this.camera)
+    this.renderMixers()
   }
 
   onResize() {
