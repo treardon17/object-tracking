@@ -1,7 +1,8 @@
 import React from 'react'
 import { ARCameraParam, ARController, artoolkit } from 'jsartoolkit5'
 import Base from 'modules/module-base'
-import BABYLON from 'babylonjs'
+import BABYLON from '@/libraries/babylonjs/babylon.2.5.max.js'
+// import BABYLON from 'babylonjs'
 // import * as THREE from 'three'
 import CameraView from '@/modules/camera-view'
 import './style.scss'
@@ -20,8 +21,9 @@ class ARTracker extends Base {
       // this.height = 480
       // this.setScene()
       // this.addBox({ name: 'box' })
-      // // this.showMarkers(true)
+      // this.showMarkers(true)
       // this.scene.render()
+      // resolve()
       this.cameraView.start()
         .then(() => {
           this.width = this.cameraView.videoWidth
@@ -45,7 +47,7 @@ class ARTracker extends Base {
       const cameraParam = new ARCameraParam()
       cameraParam.onload = () => {
         this.arController = new ARController(this.width, this.height, cameraParam)
-        this.arController.debugSetup()
+        // this.arController.debugSetup()
         this.camera.freezeProjectionMatrix(BABYLON.Matrix.FromArray(this.arController.getCameraMatrix()))
         resolve()
       }
@@ -71,8 +73,8 @@ class ARTracker extends Base {
 
   addBox({ name = 'box' } = {}) {
     // create a box
-    const box = BABYLON.Mesh.CreateBox('mesh', 1, this.scene)
-    box.position = new BABYLON.Vector3(0, 0, -5)
+    const box = BABYLON.Mesh.CreateBox('box1', 1, this.scene)
+    // box.position = new BABYLON.Vector3(0, 0, -5)
     box.showBoundingBox = true
     const material = new BABYLON.StandardMaterial('std', this.scene)
     material.diffuseColor = new BABYLON.Color3(0.5, 0, 0.5)
@@ -110,10 +112,11 @@ class ARTracker extends Base {
         this.arController.getTransMatSquare(0 /* Marker index */ , 1 /* Marker width */ , this.markerRoot.markerMatrix)
       }
       this.showMarkers(true)
+      this.arController.transMatToGLMat(this.markerRoot.markerMatrix, this.markerRoot._worldMatrix.m)
     } else {
       this.showMarkers(false)
     }
-    this.arController.debugDraw()
+    // this.arController.debugDraw()
     this.scene.render()
   }
 

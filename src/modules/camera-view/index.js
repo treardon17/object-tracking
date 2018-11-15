@@ -82,8 +82,10 @@ class CameraView extends Base {
       window.navigator[userMediaKey]({
         audio: false,
         video: {
-          width: 1280,
-          height: 720,
+          // width: 340,
+          // height: 240,
+          // width: 1280,
+          // height: 720,
           // facingMode: 'user', // front-facing camera
           facingMode: 'environment', // back camera
         }
