@@ -16,8 +16,8 @@ class ARTracker extends Base {
     return new Promise((resolve, reject) => {
       this.cameraView.start()
         .then(() => {
-          this.width = this.cameraView.videoWidth
-          this.height = this.cameraView.videoHeight
+          this.width = this.cameraView.scaledWidth
+          this.height = this.cameraView.scaledHeight
           this.setScene()
           this.addBox({ name: 'box' })
           return Promise.resolve()
@@ -51,7 +51,7 @@ class ARTracker extends Base {
     this.engine.setSize(this.width, this.height)
     // scene
     this.scene = new BABYLON.Scene(this.engine)
-    this.scene.clearColor = new BABYLON.Color4(1, 0, 0, 0)
+    this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 0)
     this.scene.useRightHandedSystem = true
     this.camera = new BABYLON.Camera('camera1', new BABYLON.Vector3(0, 0, 0), this.scene)
     this.camera.attachControl(this.refs.arOverlay, true)
@@ -93,7 +93,7 @@ class ARTracker extends Base {
 
   renderAR() {
     if (!this.arController || !this.cameraView) return
-    this.arController.detectMarker(this.cameraView.video)
+    this.arController.detectMarker(this.cameraView.canvas)
     const markerNum = this.arController.getMarkerNum()
     if (markerNum > 0) {
       if (this.markerRoot.isVisible) {

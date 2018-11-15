@@ -18,6 +18,14 @@ class CameraView extends Base {
     return this.props.scale || 1
   }
 
+  get scaledWidth() {
+    return this.videoWidth * this._scale
+  }
+
+  get scaledHeight() {
+    return this.videoHeight * this._scale
+  }
+
   get videoWidth() {
     if (this.video) {
       return this.video.videoWidth
@@ -30,6 +38,10 @@ class CameraView extends Base {
       return this.video.videoHeight
     }
     return 0
+  }
+
+  get canvas() {
+    return this.refs.canvas
   }
 
   get url() {
