@@ -120,11 +120,7 @@ class Template extends Base {
   setMarkerControls() {
     this.markerControls = new THREEx.ArMarkerControls(this.arToolkitContext, this.camera, {
       type: 'pattern',
-      // patternUrl: '/assets/data/patt.hiro',
-      // patternUrl: '/assets/data/14four-qr-marker-thick-2.patt',
-      // patternUrl: '/assets/data/ar-js.patt',
-      // patternUrl: '/assets/data/14four-qr-ar-code-marker.patt',
-      patternUrl: '/assets/data/14four-qr-ar-code-marker-thin.patt',
+      patternUrl: '/assets/data/https-marker.patt',
       changeMatrixMode: 'cameraTransformMatrix'
     })
   }
@@ -248,32 +244,48 @@ class Template extends Base {
   }
 
   onResize() {
+    const width = window.innerWidth
+    const height = window.innerHeight
     this.arToolkitSource.onResize()
     this.arToolkitSource.copySizeTo(this.renderer.domElement)
-    const width = parseFloat(this.renderer.domElement.style.width)
-    const height = parseFloat(this.renderer.domElement.style.height)
+    const sourceWidth = parseFloat(this.renderer.domElement.style.width)
+    const sourceHeight = parseFloat(this.renderer.domElement.style.height)
 
-    // let proportionWidth = 0
-    // let proportionHeight = 0
-    // if (width > height) {
-    //   const proportion = this.sourceVideo.videoHeight / this.sourceVideo.videoWidth
-    //   proportionWidth = width
-    //   proportionHeight = width * proportion
-    // } else {
-    //   const proportion = this.sourceVideo.videoWidth / this.sourceVideo.videoHeight
-    //   proportionHeight = height
-    //   proportionWidth = width * proportion
-    // }
-
-    if (this.refs.videoLayer) {
-      this.arToolkitSource.copySizeTo(this.refs.videoLayer)
-      this.refs.videoLayer.width = width
-      this.refs.videoLayer.height = height
+    const { videoLayer } = this.refs
+    if (videoLayer) {
+      const { videoWidth, videoHeight } = this.sourceVideo
+      videoLayer.width = videoWidth
+      videoLayer.height = videoHeight
+      if (videoWidth < videoHeight) {
+        // portrait video
+        const prop = videoWidth / videoHeight
+        if (height > width) {
+          // portrait screensize
+          videoLayer.style.width = `${height * prop}px`
+          videoLayer.style.height = `${height}px`
+        } else {
+          // landscape screensize
+          videoLayer.style.width = `${width}px`
+          videoLayer.style.height = `${width / prop}px`
+        }
+      } else {
+        // landscape video
+        const prop = videoHeight / videoWidth
+        if (height > width) {
+          // portrait screensize
+          videoLayer.style.width = `${height / prop}px`
+          videoLayer.style.height = `${height}px`
+        } else {
+          // landscape screensize
+          videoLayer.style.width = `${width}px`
+          videoLayer.style.height = `${width * prop}px`
+        }
+      }
     }
 
     // set container dimensions
-    this.refs.layers.style.width = `${width}px`
-    this.refs.layers.style.height = `${height}px`
+    this.refs.layers.style.width = `${sourceWidth}px`
+    this.refs.layers.style.height = `${sourceHeight}px`
 
     if (this.arToolkitContext && this.arToolkitContext.arController !== null) {
       this.arToolkitSource.copySizeTo(this.arToolkitContext.arController.canvas)

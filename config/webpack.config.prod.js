@@ -4,6 +4,7 @@ const Merge = require('webpack-merge')
 // const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
 const CommonConfig = require('./webpack.config.common.js')
 
 // use smart strategy to force replacement
@@ -115,6 +116,12 @@ const config = Merge.smartStrategy({
     // }),
     // plugin to extract css into single file
     // new ExtractTextPlugin({ filename: '[name].css', allChunks: true }),
+    new CopyWebpackPlugin([
+      {
+        from: path.resolve(__dirname, '../src/assets'),
+        to: './'
+      }
+    ]),
     // create index.html file
     new HtmlWebpackPlugin({
       filename: '../index.html',
