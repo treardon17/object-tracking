@@ -209,23 +209,56 @@ class Template extends Base {
     })
   }
 
-  combineCanvases(canvases = [], { width, height, centerX, centerY }) {
+  combineCanvases(canvases = [], { width, height, centerX, centerY, normalize }) {
     let base64 = ''
     if (canvases && canvases.length > 0) {
       const [firstCanvas] = canvases
       const baseCanvas = document.createElement('canvas')
       const shouldCenterX = centerX != null ? centerX : false
       const shouldCenterY = centerY != null ? centerY : false
-      const theWidth = width || firstCanvas.width
-      const theHeight = height || firstCanvas.height
+      const theWidth = width || firstCanvas.width // || Math.max(...canvases.map(canvas => canvas.width))
+      const theHeight = height || firstCanvas.height // || Math.max(...canvases.map(canvas => canvas.height))
       baseCanvas.width = theWidth
       baseCanvas.height = theHeight
       const ctx = baseCanvas.getContext('2d')
       for (let i = 0; i < canvases.length; i += 1) {
         const canvas = canvases[i]
-        const x = shouldCenterX ? ((theWidth / 2) - (canvas.width / 2)) : 0
-        const y = shouldCenterY ? ((theHeight / 2) - (canvas.height / 2)) : 0
-        ctx.drawImage(canvas, x, y)
+
+        const canvasWidth = canvas.width
+        const canvasHeight = canvas.height
+        let newWidth = canvasWidth
+        let newHeight = canvasHeight
+
+        if (normalize && canvasWidth < canvasHeight) {
+          // portrait video
+          const prop = canvasWidth / canvasHeight
+          if (theHeight > theWidth) {
+            // portrait screensize
+            newWidth = theHeight * prop
+            newHeight = theHeight
+          } else {
+            // landscape screensize
+            newWidth = theWidth
+            newHeight = theWidth / prop
+          }
+        } else if (normalize) {
+          // landscape video
+          const prop = canvasHeight / canvasWidth
+          if (theHeight > theWidth) {
+            // portrait screensize
+            newWidth = theHeight / prop
+            newHeight = theHeight
+          } else {
+            // landscape screensize
+            newWidth = theWidth
+            newHeight = theWidth * prop
+          }
+        }
+
+        const x = shouldCenterX ? ((theWidth / 2) - (newWidth / 2)) : 0
+        const y = shouldCenterY ? ((theHeight / 2) - (newHeight / 2)) : 0
+
+        ctx.drawImage(canvas, x, y, newWidth, newHeight)
       }
       base64 = baseCanvas.toDataURL()
     }
@@ -243,7 +276,8 @@ class Template extends Base {
         ],
         {
           centerX: true,
-          centerY: true
+          centerY: true,
+          normalize: true
         }
       )
     }
