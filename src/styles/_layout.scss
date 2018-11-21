@@ -10,6 +10,8 @@ body {
   background-color: #f2f2f2;
   font-family: $font-family;
   text-align: center;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 *{

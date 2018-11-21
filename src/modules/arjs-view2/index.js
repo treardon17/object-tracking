@@ -52,7 +52,7 @@ class Template extends Base {
   setScene() {
     // renderer
     this.renderer = new THREE.WebGLRenderer({
-      canvas: this.refs.arOverlay,
+      canvas: this.refs.arLayer,
       antialias: true,
       alpha: true
     })
@@ -63,10 +63,18 @@ class Template extends Base {
     // camera
     this.camera = new THREE.Camera()
     this.scene.add(this.camera)
-    // light
-    this.light = new THREE.DirectionalLight(0xffffff)
-    this.light.position.set(0, 1, 1).normalize()
-    this.scene.add(this.light)
+    // lighting
+    // key light
+    this.keyLight = new THREE.DirectionalLight(0xffffff)
+    this.keyLight.position.set(0, 1, 1).normalize()
+    this.scene.add(this.keyLight)
+    // ambient
+    this.ambientLight = new THREE.AmbientLight(0x404040)
+    this.scene.add(this.ambientLight)
+    // dimmer light
+    this.dimmerLight = new THREE.DirectionalLight(0x99ccff, 0.7)
+    this.dimmerLight.position.set(0, 0, 0).normalize()
+    this.scene.add(this.dimmerLight)
     this.scene.visible = false
 
     // this.addHorse({ name: 'hidalgo' })
@@ -77,7 +85,17 @@ class Template extends Base {
     return new Promise((resolve, reject) => {
       this.arToolkitSource = new THREEx.ArToolkitSource({ source: 'webcam' })
       this.arToolkitSource.init(() => {
+        this.sourceVideo = this.arToolkitSource.domElement
         this.onResize()
+        // remove the other videos the library adds to the page
+        const arDomID = 'ar-webcam-source'
+        const arVideos = document.querySelectorAll(`.${arDomID}`)
+        for (let i = 0; i < arVideos.length; i += 1) document.body.removeChild(arVideos[i])
+        // make it easy to reference in the future
+        this.sourceVideo.classList.add(arDomID)
+        if (this.refs.videoLayer) {
+          this.sourceVideo.classList.add('hide')
+        }
         resolve()
       })
     })
@@ -102,7 +120,11 @@ class Template extends Base {
   setMarkerControls() {
     this.markerControls = new THREEx.ArMarkerControls(this.arToolkitContext, this.camera, {
       type: 'pattern',
-      patternUrl: '/assets/data/patt.hiro',
+      // patternUrl: '/assets/data/patt.hiro',
+      // patternUrl: '/assets/data/14four-qr-marker-thick-2.patt',
+      // patternUrl: '/assets/data/ar-js.patt',
+      // patternUrl: '/assets/data/14four-qr-ar-code-marker.patt',
+      patternUrl: '/assets/data/14four-qr-ar-code-marker-thin.patt',
       changeMatrixMode: 'cameraTransformMatrix'
     })
   }
@@ -170,6 +192,7 @@ class Template extends Base {
       loader.load('/assets/mesh/stormtrooper/stormtrooper.dae', (collada) => {
         const { animations } = collada
         const avatar = collada.scene
+        avatar.rotation.z = 180 * (Math.PI / 180)
         avatar.traverse((node) => {
           if (node.isScinnedMesh) {
             node.frustumCulled = false
@@ -201,11 +224,22 @@ class Template extends Base {
   renderARToolkit() {
     if (this.arToolkitSource.ready === false) return
     this.arToolkitContext.update(this.arToolkitSource.domElement)
-    this.scene.visible = this.camera.visible
+    // this.scene.visible = this.camera.visible
+    this.scene.visible = true
+  }
+
+  renderVideo() {
+    const { videoLayer } = this.refs
+    if (videoLayer) {
+      const ctx = videoLayer.getContext('2d')
+      ctx.clearRect(0, 0, videoLayer.width, videoLayer.height)
+      ctx.drawImage(this.sourceVideo, 0, 0, videoLayer.width, videoLayer.height)
+    }
   }
 
   renderScene() {
     setTimeout(() => { requestAnimationFrame(this.renderScene.bind(this)) }, 1000 / this.fps)
+    this.renderVideo()
     this.renderARToolkit()
     if (!this.renderCount) this.renderCount = 0
     else this.renderCount += 1
@@ -216,6 +250,31 @@ class Template extends Base {
   onResize() {
     this.arToolkitSource.onResize()
     this.arToolkitSource.copySizeTo(this.renderer.domElement)
+    const width = parseFloat(this.renderer.domElement.style.width)
+    const height = parseFloat(this.renderer.domElement.style.height)
+
+    // let proportionWidth = 0
+    // let proportionHeight = 0
+    // if (width > height) {
+    //   const proportion = this.sourceVideo.videoHeight / this.sourceVideo.videoWidth
+    //   proportionWidth = width
+    //   proportionHeight = width * proportion
+    // } else {
+    //   const proportion = this.sourceVideo.videoWidth / this.sourceVideo.videoHeight
+    //   proportionHeight = height
+    //   proportionWidth = width * proportion
+    // }
+
+    if (this.refs.videoLayer) {
+      this.arToolkitSource.copySizeTo(this.refs.videoLayer)
+      this.refs.videoLayer.width = width
+      this.refs.videoLayer.height = height
+    }
+
+    // set container dimensions
+    this.refs.layers.style.width = `${width}px`
+    this.refs.layers.style.height = `${height}px`
+
     if (this.arToolkitContext && this.arToolkitContext.arController !== null) {
       this.arToolkitSource.copySizeTo(this.arToolkitContext.arController.canvas)
     }
@@ -224,7 +283,10 @@ class Template extends Base {
   render() {
     return (
       <div className="arjs-view">
-        <canvas data-ref="arOverlay" />
+        <div data-ref="layers" className="layers">
+          <canvas className="video-layer" data-ref="videoLayer" />
+          <canvas className="ar-layer" data-ref="arLayer" />
+        </div>
       </div>
     )
   }
