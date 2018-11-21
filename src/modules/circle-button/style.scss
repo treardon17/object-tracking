@@ -1,0 +1,14 @@
+@import "~styles/_variables";
+@import "~styles/_mixins";
+
+.circle-btn {
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 100%;
+  border: 0.25em solid $white;
+  transition: transform 0.1s cubic-bezier(0.64, 0.57, 0.67, 1.53);
+
+  &.down{
+    transform: scale(0.9);
+  }
+}

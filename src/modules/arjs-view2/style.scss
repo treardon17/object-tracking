@@ -31,4 +31,14 @@
     left: 50%;
     transform: translate3d(-50%, -50%, 0);
   }
+
+  .capture-btn{
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    margin: auto;
+    flex-shrink: 0;
+    font-size: 25px;
+  }
 }

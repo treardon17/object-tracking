@@ -1,5 +1,6 @@
 import React from 'react'
 import Base from 'modules/module-base'
+import CircleBtn from '../circle-button'
 /* eslint-disable */
 import { LoaderUtils } from 'three'
 const { THREE } = window
@@ -9,8 +10,6 @@ import 'three/examples/js/loaders/GLTFLoader'
 import 'three/examples/js/loaders/ColladaLoader'
 import './style.scss'
 /* eslint-enable */
-
-console.log(LoaderUtils)
 
 class Template extends Base {
   componentDidMount() {
@@ -52,6 +51,7 @@ class Template extends Base {
   setScene() {
     // renderer
     this.renderer = new THREE.WebGLRenderer({
+      preserveDrawingBuffer: true,
       canvas: this.refs.arLayer,
       antialias: true,
       alpha: true
@@ -189,6 +189,7 @@ class Template extends Base {
         const { animations } = collada
         const avatar = collada.scene
         avatar.rotation.z = 180 * (Math.PI / 180)
+        // avatar.rotation.x = 180 * (Math.PI / 180)
         avatar.traverse((node) => {
           if (node.isScinnedMesh) {
             node.frustumCulled = false
@@ -206,6 +207,48 @@ class Template extends Base {
         resolve()
       })
     })
+  }
+
+  combineCanvases(canvases = [], { width, height, centerX, centerY }) {
+    let base64 = ''
+    if (canvases && canvases.length > 0) {
+      const [firstCanvas] = canvases
+      const baseCanvas = document.createElement('canvas')
+      const shouldCenterX = centerX != null ? centerX : false
+      const shouldCenterY = centerY != null ? centerY : false
+      const theWidth = width || firstCanvas.width
+      const theHeight = height || firstCanvas.height
+      baseCanvas.width = theWidth
+      baseCanvas.height = theHeight
+      const ctx = baseCanvas.getContext('2d')
+      for (let i = 0; i < canvases.length; i += 1) {
+        const canvas = canvases[i]
+        const x = shouldCenterX ? ((theWidth / 2) - (canvas.width / 2)) : 0
+        const y = shouldCenterY ? ((theHeight / 2) - (canvas.height / 2)) : 0
+        ctx.drawImage(canvas, x, y)
+      }
+      base64 = baseCanvas.toDataURL()
+    }
+    return base64
+  }
+
+  snapshot = () => {
+    const { videoLayer, arLayer } = this.refs
+    let base64 = ''
+    if (videoLayer && arLayer) {
+      base64 = this.combineCanvases(
+        [
+          videoLayer,
+          arLayer
+        ],
+        {
+          centerX: true,
+          centerY: true
+        }
+      )
+    }
+    this.refs.testImg.src = base64
+    return base64
   }
 
   renderMixers() {
@@ -295,10 +338,12 @@ class Template extends Base {
   render() {
     return (
       <div className="arjs-view">
-        <div data-ref="layers" className="layers">
+        <div className="layers" data-ref="layers">
           <canvas className="video-layer" data-ref="videoLayer" />
           <canvas className="ar-layer" data-ref="arLayer" />
         </div>
+        <img className="test-img" src="" data-ref="testImg" />
+        <CircleBtn className="capture-btn" onClick={this.snapshot} />
       </div>
     )
   }
