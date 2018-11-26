@@ -1,17 +1,59 @@
 @import "~styles/_variables";
 @import "~styles/_mixins";
 
+
+.ar-webcam-source{
+  &.hide {
+    position: fixed;
+    width: 100% !important;
+    // top: -1000px;
+    // left: 0;
+    // transform: translate3d(0, -100%, 0);
+  }
+}
 .arjs-view {
-  display: inline-block;
-  .arjs-view-inner{
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+
+  .layers{
     position: relative;
+    overflow: hidden;
   }
-  .canvas-overlay, .canvas-video{
+
+  .ar-layer, .video-layer{
+    margin-top: 0 !important;
     margin-left: 0 !important;
-  }
-  .canvas-overlay{
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate3d(-50%, -50%, 0);
+  }
+
+  .btn-container{
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translate3d(-50%, 0, 0);
+    margin: auto;
+    flex-shrink: 0;
+    font-size: 25px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .download-btn, .close-btn{
+    width: 0;
+  }
+
+  .snapshot{
+    position: absolute;
+    top: 0; bottom: 0; left: 0; right: 0;
+    background-position: center center;
+    background-size: contain;
+    background-color: $black;
+    background-repeat: no-repeat;
   }
 }

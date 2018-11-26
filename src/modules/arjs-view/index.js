@@ -1,110 +1,119 @@
-import 'jsartoolkit5/js/artoolkit.api'
-import '@/libraries/threejs'
-import '@/libraries/threex'
-import 'three/examples/js/loaders/OBJLoader'
 import React from 'react'
-import PropTypes from 'prop-types'
-// import CameraView from 'modules/camera-view'
 import Base from 'modules/module-base'
+import CircleBtn from '../circle-button'
+/* eslint-disable */
+import { LoaderUtils } from 'three'
+const { THREE } = window
+THREE.LoaderUtils = LoaderUtils
+import 'three/examples/js/loaders/OBJLoader'
+import 'three/examples/js/loaders/GLTFLoader'
+import 'three/examples/js/loaders/ColladaLoader'
 import './style.scss'
-import { debug } from 'util'
-
+/* eslint-enable */
 
 class ARJSView extends Base {
+  constructor() {
+    super()
+    this.state = {
+      snapshotSrc: null
+    }
+  }
+
   componentDidMount() {
     super.componentDidMount()
-    this.setDefaults()
-    this.setBinds()
     this.setup()
   }
 
-  // /////////////////////////////////
-  // SETUP
-  // /////////////////////////////////
-  setDefaults() {
-    this.sceneItems = {}
-    this.arStatus = null
+  get snapshotSrc() {
+    return this.state.snapshotSrc || null
   }
 
   setup() {
     return new Promise((resolve, reject) => {
-      if (this.arStatus === null) {
-        this.arStatus = 'loading'
-        this.setScene()
-        this.setupARToolkitSource()
-          .then(this.setupARToolkitContext.bind(this))
-          .then(() => {
-            this.setupMarkerControls()
-            this.arStatus = 'ready'
-            this.renderScene()
-            this.addCube({ name: 'cube' })
-            resolve()
-          })
-      } else {
-        resolve()
-      }
+      this.setDefaults()
+      this.setBinds()
+      this.setScene()
+      this.setARToolkit()
+        .then(this.setARToolkitContext.bind(this))
+        .then(() => {
+          this.setMarkerControls()
+          this.renderScene()
+          resolve()
+        })
+        .catch(reject)
     })
   }
 
-  // /////////////////////////////////
-  // LISTENERS
-  // /////////////////////////////////
+  setDefaults() {
+    this.width = 640
+    this.height = 480
+    this.fps = 60
+    this.time = Date.now()
+    this.prevTime = Date.now()
+    this.sceneItems = {}
+    this.mixers = {}
+    this._visibleTimeout = null
+  }
+
+
   setBinds() {
     window.addEventListener('resize', this.onResize.bind(this))
   }
 
-  // /////////////////////////////////
-  // EVENTS
-  // /////////////////////////////////
-  onResize() {
-    // this.arToolkitSource.onResize()
-    // this.arToolkitSource.copySizeTo(this.refs.canvasVideo)
-    this.arToolkitSource.copySizeTo(this.refs.canvasOverlay)
-    // this.width = parseInt(this.renderer.domElement.style.width, 10)
-    // this.height = parseInt(this.renderer.domElement.style.height, 10)
-    // if (this.arToolkitSource.arController != null) {
-    //   this.arToolkitSource.copySizeTo(this.arToolkitContext.arController.canvas)
-    // }
-    // if (this.arToolkitContext != null) {
-    //   this.camera.projectionMatrix.copy(this.arToolkitContext.getProjectionMatrix())
-    // }
+  setScene() {
+    // renderer
+    this.renderer = new THREE.WebGLRenderer({
+      preserveDrawingBuffer: true,
+      canvas: this.refs.arLayer,
+      antialias: true,
+      alpha: true
+    })
+    this.renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+    this.renderer.setSize(this.width, this.height)
+    // scene
+    this.scene = new THREE.Scene()
+    // camera
+    this.camera = new THREE.Camera()
+    this.scene.add(this.camera)
+    // lighting
+    // key light
+    this.keyLight = new THREE.DirectionalLight(0xffffff)
+    this.keyLight.position.set(0, 1, 1).normalize()
+    this.scene.add(this.keyLight)
+    // ambient
+    this.ambientLight = new THREE.AmbientLight(0x404040)
+    this.scene.add(this.ambientLight)
+    // dimmer light
+    this.dimmerLight = new THREE.DirectionalLight(0x99ccff, 0.7)
+    this.dimmerLight.position.set(0, 0, 0).normalize()
+    this.scene.add(this.dimmerLight)
+    this.scene.visible = false
+
+    // this.addHorse({ name: 'hidalgo' })
+    this.addStormTrooper({ name: 'trooper' })
   }
 
-  // /////////////////////////////////
-  // ARJS
-  // /////////////////////////////////
-  setupARToolkitSource() {
+  setARToolkit() {
     return new Promise((resolve, reject) => {
-      this.arToolkitSource = new THREEx.ArToolkitSource({
-        // // to read from the webcam
-        sourceType: 'webcam',
-
-        // // to read from an image
-        // sourceType : 'image',
-        // sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/images/img.jpg',
-
-        // to read from a video
-        // sourceType: 'video',
-        // sourceUrl: this.cameraView.stream
-      })
+      this.arToolkitSource = new THREEx.ArToolkitSource({ source: 'webcam' })
       this.arToolkitSource.init(() => {
-        this.onResize()
         this.sourceVideo = this.arToolkitSource.domElement
+        this.onResize()
         // remove the other videos the library adds to the page
         const arDomID = 'ar-webcam-source'
         const arVideos = document.querySelectorAll(`.${arDomID}`)
         for (let i = 0; i < arVideos.length; i += 1) document.body.removeChild(arVideos[i])
         // make it easy to reference in the future
         this.sourceVideo.classList.add(arDomID)
-        // this.sourceVideo.style.position = 'fixed'
-        // this.sourceVideo.style.top = '0'
-        // this.sourceVideo.style.opacity = '0'
+        if (this.refs.videoLayer) {
+          this.sourceVideo.classList.add('hide')
+        }
         resolve()
       })
     })
   }
 
-  setupARToolkitContext() {
+  setARToolkitContext() {
     return new Promise((resolve, reject) => {
       // create atToolkitContext
       this.arToolkitContext = new THREEx.ArToolkitContext({
@@ -120,49 +129,12 @@ class ARJSView extends Base {
     })
   }
 
-  setupMarkerControls() {
+  setMarkerControls() {
     this.markerControls = new THREEx.ArMarkerControls(this.arToolkitContext, this.camera, {
       type: 'pattern',
-      patternUrl: '/assets/data/patt.hiro',
-      // patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.kanji',
-      // as we controls the camera, set changeMatrixMode: 'cameraTransformMatrix'
+      patternUrl: '/assets/data/https-marker.patt',
       changeMatrixMode: 'cameraTransformMatrix'
     })
-    // as we do changeMatrixMode: 'cameraTransformMatrix', start with invisible scene
-    this.scene.visible = false
-  }
-
-  renderARToolkit() {
-    if (this.arToolkitSource.ready === false) return
-    this.arToolkitContext.update(this.arToolkitSource.domElement)
-    this.scene.visible = this.camera.visible
-  }
-
-  // /////////////////////////////////
-  // THREEJS SCENE
-  // /////////////////////////////////
-  setScene() {
-    // init renderer
-    this.renderer = new THREE.WebGLRenderer({
-      canvas: this.refs.canvasOverlay,
-      antialias: true,
-      alpha: true
-    })
-    // init scene and camera
-    this.scene = new THREE.Scene()
-    // create a camera
-    this.camera = new THREE.Camera()
-    this.scene.add(this.camera)
-    // add light
-    this.light = new THREE.DirectionalLight(0xffffff)
-    this.light.position.set(0, 1, 1).normalize()
-    this.scene.add(this.light)
-
-    // Setup loading manager
-    this.loadingManager = new THREE.LoadingManager()
-    this.loadingManager.onProgress = (item, loaded, total) => {
-      console.log(item, loaded, total)
-    }
   }
 
   addCube({ name }) {
@@ -201,42 +173,269 @@ class ARJSView extends Base {
     })
   }
 
-  // /////////////////////////////////
-  // RENDER
-  // /////////////////////////////////
+  addHorse({ name }) {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.GLTFLoader()
+      loader.load('/assets/mesh/horse.glb', (gltf) => {
+        const mesh = gltf.scene.children[0]
+        const scale = 0.01
+        mesh.scale.set(scale, scale, scale)
+        this.scene.add(mesh)
+        const mixer = new THREE.AnimationMixer(mesh)
+        mixer.clipAction(gltf.animations[0]).setDuration(1).play()
+
+        if (name) {
+          this.sceneItems[name] = mesh
+          this.mixers[name] = mixer
+        }
+
+        resolve()
+      })
+    })
+  }
+
+  addStormTrooper({ name }) {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.ColladaLoader()
+      loader.load('/assets/mesh/stormtrooper/stormtrooper.dae', (collada) => {
+        const { animations } = collada
+        const avatar = collada.scene
+        avatar.rotation.z = 180 * (Math.PI / 180)
+        // avatar.rotation.x = 180 * (Math.PI / 180)
+        avatar.traverse((node) => {
+          if (node.isScinnedMesh) {
+            node.frustumCulled = false
+          }
+        })
+        const mixer = new THREE.AnimationMixer(avatar)
+        const action = mixer.clipAction(animations[0]).play()
+        this.scene.add(avatar)
+
+        if (name) {
+          this.sceneItems[name] = avatar
+          this.mixers[name] = mixer
+        }
+
+        resolve()
+      })
+    })
+  }
+
+  combineCanvases(canvases = [], { width, height, centerX, centerY, normalize }) {
+    let base64 = ''
+    if (canvases && canvases.length > 0) {
+      const [firstCanvas] = canvases
+      const baseCanvas = document.createElement('canvas')
+      const shouldCenterX = centerX != null ? centerX : false
+      const shouldCenterY = centerY != null ? centerY : false
+      const theWidth = width || firstCanvas.width // || Math.max(...canvases.map(canvas => canvas.width))
+      const theHeight = height || firstCanvas.height // || Math.max(...canvases.map(canvas => canvas.height))
+      baseCanvas.width = theWidth
+      baseCanvas.height = theHeight
+      const ctx = baseCanvas.getContext('2d')
+      for (let i = 0; i < canvases.length; i += 1) {
+        const canvas = canvases[i]
+
+        const canvasWidth = canvas.width
+        const canvasHeight = canvas.height
+        let newWidth = canvasWidth
+        let newHeight = canvasHeight
+
+        if (normalize && canvasWidth < canvasHeight) {
+          // portrait video
+          const prop = canvasWidth / canvasHeight
+          if (theHeight > theWidth) {
+            // portrait screensize
+            newWidth = theHeight * prop
+            newHeight = theHeight
+          } else {
+            // landscape screensize
+            newWidth = theWidth
+            newHeight = theWidth / prop
+          }
+        } else if (normalize) {
+          // landscape video
+          const prop = canvasHeight / canvasWidth
+          if (theHeight > theWidth) {
+            // portrait screensize
+            newWidth = theHeight / prop
+            newHeight = theHeight
+          } else {
+            // landscape screensize
+            newWidth = theWidth
+            newHeight = theWidth * prop
+          }
+        }
+
+        const x = shouldCenterX ? ((theWidth / 2) - (newWidth / 2)) : 0
+        const y = shouldCenterY ? ((theHeight / 2) - (newHeight / 2)) : 0
+
+        ctx.drawImage(canvas, x, y, newWidth, newHeight)
+      }
+      base64 = baseCanvas.toDataURL()
+    }
+    return base64
+  }
+
+  snapshot = () => {
+    const { videoLayer, arLayer } = this.refs
+    let base64 = ''
+    if (videoLayer && arLayer) {
+      base64 = this.combineCanvases(
+        [
+          videoLayer,
+          arLayer
+        ],
+        {
+          centerX: true,
+          centerY: true,
+          normalize: true
+        }
+      )
+    }
+    this.setState({ snapshotSrc: base64 })
+    this.downloadBtn.show()
+    this.closeBtn.show()
+    this.cameraBtn.hide()
+    return base64
+  }
+
+  close = () => {
+    this.downloadBtn.hide()
+    this.closeBtn.hide()
+    this.cameraBtn.show()
+    this.setState({
+      snapshotSrc: null
+    })
+  }
+
+  renderMixers() {
+    this.prevTime = this.time
+    this.time = Date.now()
+    Object.keys(this.mixers).forEach((key) => {
+      const mixer = this.mixers[key]
+      mixer.update((this.time - this.prevTime) * 0.001)
+    })
+  }
+
+  renderARToolkit() {
+    if (this.arToolkitSource.ready === false) return
+    this.arToolkitContext.update(this.arToolkitSource.domElement)
+    // this.scene.visible = this.camera.visible
+    if (!this.camera.visible && !this._visibleTimeout) {
+      this._visibleTimeout = setTimeout(() => {
+        this.scene.visible = false
+      }, 500)
+    } else if (this.camera.visible) {
+      clearTimeout(this._visibleTimeout)
+      this._visibleTimeout = null
+      this.scene.visible = true
+    }
+  }
+
   renderVideo() {
-    const ctx = this.refs.canvasVideo.getContext('2d')
-    ctx.drawImage(this.sourceVideo, 0, 0, 640, 480)
+    const { videoLayer } = this.refs
+    if (videoLayer) {
+      const ctx = videoLayer.getContext('2d')
+      ctx.clearRect(0, 0, videoLayer.width, videoLayer.height)
+      ctx.drawImage(this.sourceVideo, 0, 0, videoLayer.width, videoLayer.height)
+    }
   }
 
   renderScene() {
-    window.requestAnimationFrame(this.renderScene.bind(this))
-    if (this.arStatus === 'ready' && this.renderer && typeof this.renderer.render === 'function') {
-      // this.renderVideo()
-      this.renderer.render(this.scene, this.camera)
-      this.renderARToolkit()
+    setTimeout(() => { requestAnimationFrame(this.renderScene.bind(this)) }, 1000 / this.fps)
+    this.renderVideo()
+    this.renderARToolkit()
+    if (!this.renderCount) this.renderCount = 0
+    else this.renderCount += 1
+    if (this.renderCount % 500 === 0) this.renderer.render(this.scene, this.camera)
+    this.renderMixers()
+  }
+
+  onResize() {
+    const width = window.innerWidth
+    const height = window.innerHeight
+    this.arToolkitSource.onResize()
+    this.arToolkitSource.copySizeTo(this.renderer.domElement)
+    const sourceWidth = parseFloat(this.renderer.domElement.style.width)
+    const sourceHeight = parseFloat(this.renderer.domElement.style.height)
+
+    const { videoLayer } = this.refs
+    if (videoLayer) {
+      const { videoWidth, videoHeight } = this.sourceVideo
+      const videoAspect = videoHeight / videoWidth
+      const windowAspect = height / width
+      // console.log(videoAspect, windowAspect)
+      videoLayer.width = videoWidth
+      videoLayer.height = videoHeight
+      if (videoWidth < videoHeight) {
+        // portrait video
+        const prop = videoWidth / videoHeight
+        if (windowAspect > videoAspect) {
+          // portrait screensize
+          videoLayer.style.width = `${height * prop}px`
+          videoLayer.style.height = `${height}px`
+        } else {
+          // landscape screensize
+          videoLayer.style.width = `${width}px`
+          videoLayer.style.height = `${width / prop}px`
+        }
+      } else {
+        // landscape video
+        const prop = videoHeight / videoWidth
+        if (windowAspect > videoAspect) {
+          // portrait screensize
+          videoLayer.style.width = `${height / prop}px`
+          videoLayer.style.height = `${height}px`
+        } else {
+          // landscape screensize
+          videoLayer.style.width = `${width}px`
+          videoLayer.style.height = `${width * prop}px`
+        }
+      }
+    }
+
+    // set container dimensions
+    this.refs.layers.style.width = `${sourceWidth}px`
+    this.refs.layers.style.height = `${sourceHeight}px`
+
+    if (this.arToolkitContext && this.arToolkitContext.arController !== null) {
+      this.arToolkitSource.copySizeTo(this.arToolkitContext.arController.canvas)
     }
   }
 
   render() {
-    let classes = 'arjs-view'
-    if (this.props.hideCamera) classes += ' hide-camera'
     return (
-      <div className={classes} ref={(ref) => { this.el = ref }}>
-        <div className="arjs-view-inner">
-          {/* <canvas className="canvas-video" data-ref="canvasVideo" /> */}
-          <canvas className="canvas-overlay" data-ref="canvasOverlay" />
+      <div className="arjs-view">
+        <div className="layers" data-ref="layers">
+          <canvas className="video-layer" data-ref="videoLayer" />
+          <canvas className="ar-layer" data-ref="arLayer" />
+        </div>
+        {this.snapshotSrc != null ? <div className="snapshot" style={{ backgroundImage: `url(${this.snapshotSrc})` }} data-ref="snapshot" /> : null}
+        <div className="btn-container">
+          <CircleBtn
+            ref={ref => this.cameraBtn = ref}
+            icon="/assets/icon/camera.svg"
+            className="capture-btn"
+            onClick={this.snapshot}
+          />
+          <CircleBtn
+            ref={ref => this.closeBtn = ref}
+            icon="/assets/icon/x.svg"
+            className="close-btn"
+            onClick={this.close}
+          />
+          <CircleBtn
+            ref={ref => this.downloadBtn = ref}
+            icon="/assets/icon/download.svg"
+            className="download-btn"
+            href={this.snapshotSrc}
+            download="ar-snapshot.jpg"
+          />
         </div>
       </div>
     )
   }
-}
-
-ARJSView.propTypes = {
-  hideCamera: PropTypes.bool,
-  showDots: PropTypes.bool,
-  showSmooth: PropTypes.bool,
-  markerImg: PropTypes.string,
 }
 
 export default ARJSView
