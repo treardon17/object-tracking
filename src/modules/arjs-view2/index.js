@@ -11,10 +11,21 @@ import 'three/examples/js/loaders/ColladaLoader'
 import './style.scss'
 /* eslint-enable */
 
-class Template extends Base {
+class ARJSView extends Base {
+  constructor() {
+    super()
+    this.state = {
+      snapshotSrc: null
+    }
+  }
+
   componentDidMount() {
     super.componentDidMount()
     this.setup()
+  }
+
+  get snapshotSrc() {
+    return this.state.snapshotSrc || null
   }
 
   setup() {
@@ -281,8 +292,24 @@ class Template extends Base {
         }
       )
     }
-    this.refs.testImg.src = base64
+    this.setState({ snapshotSrc: base64 })
+    this.downloadBtn.show()
+    this.closeBtn.show()
+    this.cameraBtn.hide()
     return base64
+  }
+
+  close = () => {
+    this.downloadBtn.hide()
+    this.closeBtn.hide()
+    this.cameraBtn.show()
+    this.setState({
+      snapshotSrc: null
+    })
+  }
+
+  downloadSnapshot = () => {
+
   }
 
   renderMixers() {
@@ -331,12 +358,15 @@ class Template extends Base {
     const { videoLayer } = this.refs
     if (videoLayer) {
       const { videoWidth, videoHeight } = this.sourceVideo
+      const videoAspect = videoHeight / videoWidth
+      const windowAspect = height / width
+      // console.log(videoAspect, windowAspect)
       videoLayer.width = videoWidth
       videoLayer.height = videoHeight
       if (videoWidth < videoHeight) {
         // portrait video
         const prop = videoWidth / videoHeight
-        if (height > width) {
+        if (windowAspect > videoAspect) {
           // portrait screensize
           videoLayer.style.width = `${height * prop}px`
           videoLayer.style.height = `${height}px`
@@ -348,7 +378,7 @@ class Template extends Base {
       } else {
         // landscape video
         const prop = videoHeight / videoWidth
-        if (height > width) {
+        if (windowAspect > videoAspect) {
           // portrait screensize
           videoLayer.style.width = `${height / prop}px`
           videoLayer.style.height = `${height}px`
@@ -376,11 +406,32 @@ class Template extends Base {
           <canvas className="video-layer" data-ref="videoLayer" />
           <canvas className="ar-layer" data-ref="arLayer" />
         </div>
-        <img className="test-img" src="" data-ref="testImg" />
-        <CircleBtn className="capture-btn" onClick={this.snapshot} />
+        {this.snapshotSrc != null ? <div className="snapshot" style={{ backgroundImage: `url(${this.snapshotSrc})` }} data-ref="snapshot" /> : null}
+        <div className="btn-container">
+          <CircleBtn
+            ref={ref => this.cameraBtn = ref}
+            icon="/assets/icon/camera.svg"
+            className="capture-btn"
+            onClick={this.snapshot}
+          />
+          <CircleBtn
+            ref={ref => this.closeBtn = ref}
+            icon="/assets/icon/x.svg"
+            className="close-btn"
+            onClick={this.close}
+          />
+          <CircleBtn
+            ref={ref => this.downloadBtn = ref}
+            icon="/assets/icon/download.svg"
+            className="download-btn"
+            onClick={this.downloadSnapshot}
+            href={this.snapshotSrc}
+            download="ar-snapshot.jpg"
+          />
+        </div>
       </div>
     )
   }
 }
 
-export default Template
+export default ARJSView

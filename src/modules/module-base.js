@@ -22,6 +22,7 @@ class Base extends React.Component {
     }
     const refs = this.node.querySelectorAll('*[data-ref]')
     this.refs = {}
+    this.refs.$el = this.node
     for (let i = 0; i < refs.length; i += 1) {
       const ref = refs[i]
       const refName = ref.getAttribute('data-ref')
