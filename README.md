@@ -55,3 +55,11 @@ npm run build
 ```
 npm run production
 ```
+
+# Docker
+
+### build
+
+```
+docker build -t treardon17/object-tracking .
+```
