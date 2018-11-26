@@ -132,7 +132,7 @@ class ARJSView extends Base {
   setMarkerControls() {
     this.markerControls = new THREEx.ArMarkerControls(this.arToolkitContext, this.camera, {
       type: 'pattern',
-      patternUrl: '/assets/data/https-marker.patt',
+      patternUrl: '/assets/data/stage-14four-marker.patt',
       changeMatrixMode: 'cameraTransformMatrix'
     })
   }
