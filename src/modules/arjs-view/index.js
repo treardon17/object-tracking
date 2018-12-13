@@ -15,7 +15,8 @@ class ARJSView extends Base {
   constructor() {
     super()
     this.state = {
-      snapshotSrc: null
+      snapshotSrc: null,
+      videoSrc: null
     }
   }
 
@@ -90,7 +91,38 @@ class ARJSView extends Base {
     this.scene.visible = false
 
     // this.addHorse({ name: 'hidalgo' })
-    this.addStormTrooper({ name: 'trooper' })
+    // this.addStormTrooper({ name: 'trooper' })
+    // this.addVideo({ name: 'plane', src: '/assets/video/timer.mp4' })
+    const width = 6.5
+    const height = 8.5
+    const imageHeight = width * 0.4186228482
+    const rotation = {
+      x: -Math.PI / 2
+    }
+    this.addPlane({
+      name: 'background',
+      width,
+      color: 0x000000,
+      height,
+      rotation,
+      position: {
+        y: -1,
+        z: 0,
+        x: 0
+      }
+    })
+    this.addPlane({
+      name: 'foreground',
+      img: '/assets/img/fpo-play.jpg',
+      width: width * 0.9,
+      height: imageHeight,
+      rotation,
+      position: {
+        y: 0,
+        x: 0,
+        z: 0
+      }
+    })
   }
 
   setARToolkit() {
@@ -134,6 +166,70 @@ class ARJSView extends Base {
       type: 'pattern',
       patternUrl: '/assets/data/stage-14four-marker.patt',
       changeMatrixMode: 'cameraTransformMatrix'
+    })
+  }
+
+  addPlane({ name, img, color, width, height, rotation, position }) {
+    const geometry = new THREE.PlaneGeometry(width, height)
+    let material
+    if (typeof img === 'string') {
+      const loader = new THREE.TextureLoader()
+      material = new THREE.MeshLambertMaterial({
+        color,
+        map: loader.load(img)
+      })
+    } else {
+      material = new THREE.MeshBasicMaterial({
+        color,
+        // transparent: true,
+        // opacity: 1,
+        side: THREE.DoubleSide
+      })
+      // material = new THREE.MeshNormalMaterial({
+      //   color,
+      //   // transparent: true,
+      //   // opacity: 1,
+      //   side: THREE.DoubleSide
+      // })
+    }
+    // create mesh
+    const mesh = new THREE.Mesh(geometry, material)
+    // set rotation
+    if (typeof rotation === 'object') {
+      Object.keys(rotation).forEach((key) => {
+        mesh.rotation[key] = rotation[key]
+      })
+    }
+    // set position
+    if (typeof position === 'object') {
+      Object.keys(position).forEach((key) => {
+        mesh.position[key] = position[key]
+      })
+    }
+    this.scene.add(mesh)
+    if (name) this.sceneItems[name] = mesh
+  }
+
+  addVideo({ name, src }) {
+    return new Promise((resolve) => {
+      this.setState({
+        videoSrc: src
+      }, () => {
+        const geometry = new THREE.PlaneGeometry(6.5, 8.5)
+        // const material = new THREE.MeshNormalMaterial({
+        //   transparent: true,
+        //   opacity: 1,
+        //   side: THREE.DoubleSide
+        // })
+        const loader = new THREE.TextureLoader()
+        const material = new THREE.MeshLambertMaterial({ map: loader.load('/assets/img/stream.jpg') })
+        const mesh = new THREE.Mesh(geometry, material)
+        mesh.rotation.x = -Math.PI / 2
+        mesh.position.y = -1
+        this.scene.add(mesh)
+        if (name) this.sceneItems[name] = mesh
+        resolve()
+      })
     })
   }
 
@@ -405,6 +501,12 @@ class ARJSView extends Base {
   }
 
   render() {
+    const video = null
+    // const video = this.state.videoSrc ? (
+    //   <video muted loop playsinline autoplay src={this.state.videoSrc}>
+    //     <source />
+    //   </video>
+    // ) : null
     return (
       <div className="arjs-view">
         <div className="layers" data-ref="layers">
@@ -412,6 +514,7 @@ class ARJSView extends Base {
           <canvas className="ar-layer" data-ref="arLayer" />
         </div>
         {this.snapshotSrc != null ? <div className="snapshot" style={{ backgroundImage: `url(${this.snapshotSrc})` }} data-ref="snapshot" /> : null}
+        {/* { video } */}
         <div className="btn-container">
           <CircleBtn
             ref={ref => this.cameraBtn = ref}

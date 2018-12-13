@@ -38,7 +38,8 @@ module.exports = {
     "no-debugger": 0,
     "no-param-reassign": 0,
     "global-require": 0,
-    "jsx-a11y/anchor-has-content": 0
+    "jsx-a11y/anchor-has-content": 0,
+    "react/no-unknown-property": 0
   },
   "env": {
     "browser": true,
