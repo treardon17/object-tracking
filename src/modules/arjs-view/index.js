@@ -53,12 +53,15 @@ class ARJSView extends Base {
     this.prevTime = Date.now()
     this.sceneItems = {}
     this.mixers = {}
+    this.keysPressed = {}
     this._visibleTimeout = null
   }
 
 
   setBinds() {
     window.addEventListener('resize', this.onResize.bind(this))
+    window.addEventListener('keydown', this.onKeydown.bind(this))
+    window.addEventListener('keyup', this.onKeyup.bind(this))
   }
 
   setScene() {
@@ -93,34 +96,28 @@ class ARJSView extends Base {
     // this.addHorse({ name: 'hidalgo' })
     // this.addStormTrooper({ name: 'trooper' })
     // this.addVideo({ name: 'plane', src: '/assets/video/timer.mp4' })
-    const width = 6.5
-    const height = 8.5
-    const imageHeight = width * 0.4186228482
+    // const width = 6.5
+    // const height = 8.5
+
+    // 8.5 x 11 sheet of paper
+    // const proportion = 8.5 / 11
+    const proportion = 1500 / 633
+    const width = 3.9
+    const height = width / proportion
     const rotation = {
-      x: -Math.PI / 2
+      x: -Math.PI / 2,
+      z: -Math.PI / 5.2,
     }
-    this.addPlane({
-      name: 'background',
-      width,
-      color: 0x000000,
-      height,
-      rotation,
-      position: {
-        y: -1,
-        z: 0,
-        x: 0
-      }
-    })
     this.addPlane({
       name: 'foreground',
       img: '/assets/img/fpo-play.jpg',
-      width: width * 0.9,
-      height: imageHeight,
+      width,
+      height,
       rotation,
       position: {
         y: 0,
-        x: 0,
-        z: 0
+        x: 1.7400000000000004,
+        z: -0.5439999999999998
       }
     })
   }
@@ -164,7 +161,9 @@ class ARJSView extends Base {
   setMarkerControls() {
     this.markerControls = new THREEx.ArMarkerControls(this.arToolkitContext, this.camera, {
       type: 'pattern',
-      patternUrl: '/assets/data/stage-14four-marker.patt',
+      patternUrl: '/assets/data/large-qr-marker.patt',
+      // patternUrl: '/assets/data/high-res-fancy.patt',
+      // patternUrl: '/assets/data/stage-14four-marker.patt',
       changeMatrixMode: 'cameraTransformMatrix'
     })
   }
@@ -446,6 +445,68 @@ class ARJSView extends Base {
     else this.renderCount += 1
     if (this.renderCount % 500 === 0) this.renderer.render(this.scene, this.camera)
     this.renderMixers()
+  }
+
+  handleKeyAction() {
+    let positionChanged = false
+    let rotationChanged = false
+    let sizeChanged = false
+
+    const isRotation = this.keysPressed.r
+    let axis
+    if (this.keysPressed.x) axis = 'x'
+    else if (this.keysPressed.y) axis = 'y'
+    else if (this.keysPressed.z) axis = 'z'
+    const { foreground } = this.sceneItems
+    const { position, rotation, scale } = foreground
+
+    const { ArrowUp, ArrowDown } = this.keysPressed
+    const arrowPressed = (ArrowUp || ArrowDown)
+
+    // position or rotation change
+    if (axis) {
+      if (ArrowUp) {
+        if (isRotation) {
+          rotationChanged = true
+          rotation[axis] += Math.PI / 360
+        } else {
+          positionChanged = true
+          position[axis] += 0.1
+        }
+      } else if (ArrowDown) {
+        if (isRotation) {
+          rotationChanged = true
+          rotation[axis] -= Math.PI / 360
+        } else {
+          positionChanged = true
+          position[axis] -= 0.1
+        }
+      }
+    }
+
+    // width or height change
+    const scaleChange = 0.025
+    if (this.keysPressed.w && arrowPressed) {
+      sizeChanged = true
+      scale.x += ArrowUp ? scaleChange : -scaleChange
+    } else if (this.keysPressed.h && arrowPressed) {
+      sizeChanged = true
+      scale.y += ArrowUp ? scaleChange : -scaleChange
+    }
+    
+    if (positionChanged) console.log('position:', position)
+    if (rotationChanged) console.log('rotation:', rotation)
+    if (sizeChanged) console.log('dimensions:', scale)
+  }
+
+  onKeydown(e) {
+    this.keysPressed[e.key] = true
+    this.handleKeyAction()
+  }
+
+  onKeyup(e) {
+    this.keysPressed[e.key] = false
+    this.handleKeyAction()
   }
 
   onResize() {
