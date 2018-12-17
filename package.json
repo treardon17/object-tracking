@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": "https://github.com/alexmarmon/react-mobx-template.git",
   "scripts": {
-    "start": "cross-env PORT=8080 node config/prod-server.js",
+    "start": "cross-env node config/prod-server.js",
     "dev": "cross-env BABEL_ENV=development PORT=4000 node config/dev-server.js",
     "lint": "eslint --ext .js --ext .jsx src/; exit 0",
     "lint-fix": "eslint --fix --ext .js --ext .jsx src/; exit 0",
