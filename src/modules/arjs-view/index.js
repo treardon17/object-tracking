@@ -493,7 +493,7 @@ class ARJSView extends Base {
       sizeChanged = true
       scale.y += ArrowUp ? scaleChange : -scaleChange
     }
-    
+
     if (positionChanged) console.log('position:', position)
     if (rotationChanged) console.log('rotation:', rotation)
     if (sizeChanged) console.log('dimensions:', scale)
