@@ -98,11 +98,8 @@ class ARJSView extends Base {
     // this.addVideo({ name: 'plane', src: '/assets/video/timer.mp4' })
     // const width = 6.5
     // const height = 8.5
-
-    // 8.5 x 11 sheet of paper
-    // const proportion = 8.5 / 11
     const proportion = 1500 / 633
-    const width = 3.9
+    const width = 3.8
     const height = width / proportion
     const rotation = {
       x: -Math.PI / 2,
@@ -115,8 +112,8 @@ class ARJSView extends Base {
       height,
       rotation,
       position: {
+        x: 1.6400000000000003,
         y: 0,
-        x: 1.7400000000000004,
         z: -0.5439999999999998
       }
     })
@@ -161,7 +158,7 @@ class ARJSView extends Base {
   setMarkerControls() {
     this.markerControls = new THREEx.ArMarkerControls(this.arToolkitContext, this.camera, {
       type: 'pattern',
-      patternUrl: '/assets/data/large-qr-marker.patt',
+      patternUrl: '/assets/data/large-qr-marker-heroku.patt',
       // patternUrl: '/assets/data/high-res-fancy.patt',
       // patternUrl: '/assets/data/stage-14four-marker.patt',
       changeMatrixMode: 'cameraTransformMatrix'
@@ -471,7 +468,7 @@ class ARJSView extends Base {
           rotation[axis] += Math.PI / 360
         } else {
           positionChanged = true
-          position[axis] += 0.1
+          position[axis] += 0.05
         }
       } else if (ArrowDown) {
         if (isRotation) {
@@ -479,13 +476,13 @@ class ARJSView extends Base {
           rotation[axis] -= Math.PI / 360
         } else {
           positionChanged = true
-          position[axis] -= 0.1
+          position[axis] -= 0.05
         }
       }
     }
 
     // width or height change
-    const scaleChange = 0.025
+    const scaleChange = 0.005
     if (this.keysPressed.w && arrowPressed) {
       sizeChanged = true
       scale.x += ArrowUp ? scaleChange : -scaleChange
